@@ -1,4 +1,6 @@
 import string
+import secrets
+import hashlib
 from math import log, pow
 import customtkinter
 
@@ -81,12 +83,30 @@ class Password:
         total_time.append(years)        
 
         return total_time
+    
+class PasswordGenerator:
+    def __init__(self, length):
+        self.length = length
+        self.password = self._generate_password()
+
+    def _generate_password(self) -> str:
+        alphabet = string.ascii_letters + string.digits + string.punctuation
+        password = ''.join(secrets.choice(alphabet) for i in range(self.length))
+        password = password.encode('utf-8')
+        h = hashlib.new('sha256')
+        h.update(password)
+        print(h.digest())
+        return h
+
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.geometry("600x400")
         
+        new_password = PasswordGenerator(16)
+        print(new_password.password)
+
         self.grid_columnconfigure(0, weight=1)
 
         self.title = customtkinter.CTkLabel(
