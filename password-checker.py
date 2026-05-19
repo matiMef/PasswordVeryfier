@@ -1,7 +1,7 @@
 import string
 import secrets
 import hashlib
-from math import log, pow
+from math import pow
 import customtkinter
 
 class Password:
@@ -108,14 +108,126 @@ class AuthService:
         
         input_hash = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
         return input_hash == self.stored_hash
-    
-class ToplevelWindow(customtkinter.CTkToplevel):
+
+class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
+    def __init__(self, master, title, values):
+        super().__init__(master, label_text=title)
+        self.grid_columnconfigure(0, weight=1)
+        self.values = values
+        self.checkboxes = []
+
+        for i, value in enumerate(self.values):
+            checkbox = customtkinter.CTkCheckBox(self, text=value)
+            checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
+            self.checkboxes.append(checkbox)
+
+    def get(self):
+        checked_checkboxes = []
+        for checkbox in self.checkboxes:
+            if checkbox.get() == 1:
+                checked_checkboxes.append(checkbox.cget("text"))
+        return checked_checkboxes
+
+class PasswordPanel(customtkinter.CTkToplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("400x300")
+        self.geometry("600x250")
+        self.title("Vault")
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
-        self.label = customtkinter.CTkLabel(self, text="ToplevelWindow")
-        self.label.pack(padx=20, pady=20)
+        values = ["value 1", "value 2", "value 3", "value 4", "value 5", "value 6"]
+        self.scrollable_checkbox_frame = ScrollablePasswordFrame(
+            self, 
+            title="Saved passwords", 
+            values=values)
+        self.scrollable_checkbox_frame.grid(
+            row=0, 
+            column=0, 
+            padx=10, 
+            pady=(10, 0), 
+            sticky="nsew")
+
+        self.gen_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Generate", 
+            fg_color="#1CE634",
+            hover_color="#11841D",
+            command=self.button_callback)
+        self.gen_button.grid(
+            row=3, 
+            column=0, 
+            padx=10, 
+            pady=10, 
+            sticky="w")
+
+        self.del_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Delete",
+            fg_color="#E03913",
+            hover_color="#831010",
+            command=self.button_callback)
+        self.del_button.grid(
+            row=3, 
+            column=0, 
+            padx=157, 
+            pady=10, 
+            sticky="w")
+        
+        self.copy_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30, 
+            text="Copy",
+            fg_color="#1391E0",
+            hover_color="#104483",
+            command=self.button_callback)
+        self.copy_button.grid(
+            row=3, 
+            column=0, 
+            padx=10, 
+            pady=10, 
+            sticky="e")
+        
+        self.exit_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Exit",
+            fg_color="#E0DC13",
+            hover_color="#7F8310",
+            command=self.button_callback)
+        self.exit_button.grid(
+            row=3, 
+            column=0, 
+            padx=157, 
+            pady=10, 
+            sticky="e")
+    
+    def button_callback(self):
+        self.confirmation_dialog=ConfirmationDialog("deletion")
+
+class ConfirmationDialog(customtkinter.CTkToplevel):
+    def __init__(self, dialog_type, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("300x200")
+        self.title("Confirm")
+        self.dialog_type = dialog_type
+
+        self.grid_rowconfigure(0, weight=1)
+
+        self.label = customtkinter.CTkLabel(
+            self, 
+            text=f"Confirm {self.dialog_type}")
+        self.label.grid(
+            row=0, 
+            column=0, 
+            padx=0, 
+            pady=(20,0))
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -131,10 +243,10 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(0, weight=1)
 
         self.app_title = customtkinter.CTkLabel(
-                                        self,
-                                        text="Check password strength",
-                                        fg_color="transparent",
-                                        font=("Helvetica", 24, "bold"))
+            self,
+            text="Check password strength",
+            fg_color="transparent",
+            font=("Helvetica", 24, "bold"))
         
         self.app_title.grid(
             row=0,
@@ -211,11 +323,12 @@ class App(customtkinter.CTk):
             width=500,
             height=5,
             orientation="horizontal")
-        self.progressbar.grid(row=3,
-                              column=0,
-                              padx=20,
-                              pady=20,
-                              columnspan=2)
+        self.progressbar.grid(
+            row=3,
+            column=0,
+            padx=20,
+            pady=20,
+            columnspan=2)
         self.progressbar.set(0.1)
         self.progressbar.configure(progress_color="gray")
 
@@ -239,7 +352,7 @@ class App(customtkinter.CTk):
     def openPanel(self) -> None:
         print("something")
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
-            self.toplevel_window = ToplevelWindow()  
+            self.toplevel_window = PasswordPanel()  
         else:
             self.toplevel_window.focus() 
 
