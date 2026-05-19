@@ -5,12 +5,12 @@ from math import log, pow
 import customtkinter
 
 class Password:
-    def __init__(self, password):
+    def __init__(self, password: str):
         self.password = str(password)
         self.length = len(password)
-        self.pool_size = self._calculate_pool_size()
-        self.complexity = self._check_password_complexity()
-        self.crack_time = self._map_crack_time()
+        self.pool_size = self._calculate_pool_size
+        self.complexity = self._check_password_complexity
+        self.crack_time = self._map_crack_time
 
     def check_is_short(self) -> bool:
         return True if self.length < 6 else False
@@ -85,37 +85,58 @@ class Password:
         return total_time
     
 class PasswordGenerator:
-    def __init__(self, length):
+    def __init__(self, length: int):
         self.length = length
         self.password = self._generate_password()
 
     def _generate_password(self) -> str:
         alphabet = string.ascii_letters + string.digits + string.punctuation
-        password = ''.join(secrets.choice(alphabet) for i in range(self.length))
-        password = password.encode('utf-8')
-        h = hashlib.new('sha256')
-        h.update(password)
-        print(h.digest())
-        return h
+        secure_password = ''.join(secrets.choice(alphabet) for i in range(self.length))
+        return secure_password
 
+class AuthService:
+    def __init__(self):
+        self.unlock_hash="abc"
+        self.stored_hash="abc"
+
+    def _claimStoredHash(self):
+        pass
+    
+    def verify_password(self, plain_password: str) -> bool:
+        if not plain_password:
+            return False
+        
+        input_hash = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
+        return input_hash == self.stored_hash
+    
+class ToplevelWindow(customtkinter.CTkToplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("400x300")
+
+        self.label = customtkinter.CTkLabel(self, text="ToplevelWindow")
+        self.label.pack(padx=20, pady=20)
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.geometry("600x400")
         
-        new_password = PasswordGenerator(16)
+        self.auth_service = AuthService()
+        self.toplevel_window = None
+
+        new_password = PasswordGenerator(32)
         print(new_password.password)
 
         self.grid_columnconfigure(0, weight=1)
 
-        self.title = customtkinter.CTkLabel(
+        self.app_title = customtkinter.CTkLabel(
                                         self,
                                         text="Check password strength",
                                         fg_color="transparent",
                                         font=("Helvetica", 24, "bold"))
         
-        self.title.grid(
+        self.app_title.grid(
             row=0,
             column=0,
             padx=20,
@@ -153,7 +174,7 @@ class App(customtkinter.CTk):
 
         self.password_submit = customtkinter.CTkButton(
             self,
-            width=300,
+            width=200,
             height=40,
             text="Submit",
             fg_color="#1f6aa5",
@@ -163,9 +184,27 @@ class App(customtkinter.CTk):
         self.password_submit.grid(
             row=4,
             column=0,
-            padx=20,
+            padx=50,
             pady=(10,20),
-            columnspan=2)
+            columnspan=2,
+            sticky="w")
+        
+        self.generate_password = customtkinter.CTkButton(
+            self,
+            width=200,
+            height=40,
+            text="Saved passwords",
+            fg_color="#1CE634",
+            hover_color="#11841D",
+            command=self.auth_access,
+            font=("Helvetica", 14, "bold"))
+        self.generate_password.grid(
+            row=4,
+            column=0,
+            padx=50,
+            pady=(10,20),
+            columnspan=2,
+            sticky="e")
 
         self.progressbar = customtkinter.CTkProgressBar(
             self,
@@ -190,24 +229,37 @@ class App(customtkinter.CTk):
             padx=20,
             pady=20,
             columnspan=2)
+    
+    def auth_access(self) -> None:
+        self.dialog = customtkinter.CTkInputDialog(text="Type in a password:", title="Authorization")
+        user_input = self.dialog.get_input()
+        # if self.auth_service.verify_password(user_input):
+        self.openPanel()
+    
+    def openPanel(self) -> None:
+        print("something")
+        if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            self.toplevel_window = ToplevelWindow()  
+        else:
+            self.toplevel_window.focus() 
 
-    def checkbox_event(self):
+    def checkbox_event(self) -> None:
         self.checkbox_state = self.checkbox.get()
         if self.checkbox_state == "on":
             self.password_field.configure(show="")
         else:
             self.password_field.configure(show="*")
 
-    def button_callback(self):
+    def button_callback(self) -> None:
         password = Password(self.password_field.get())
         self.show_label(password)
         self.update_progressbar(password)
 
-    def show_label(self, password):
+    def show_label(self, password: str) -> None:
         crack_time = password.crack_time[4]
         self.crack_time_label.configure(text=f"Estimated time to crack: {crack_time}")
 
-    def update_progressbar(self, password):
+    def update_progressbar(self, password: str) -> None:
         if password.length < 8 or (password.crack_time[3] < 60 and password.crack_time[4] < 1):
             self.progressbar.set(0.1)
             self.progressbar.configure(progress_color="red")
