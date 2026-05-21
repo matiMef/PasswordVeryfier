@@ -8,9 +8,9 @@ class Password:
     def __init__(self, password: str):
         self.password = str(password)
         self.length = len(password)
-        self.pool_size = self._calculate_pool_size
-        self.complexity = self._check_password_complexity
-        self.crack_time = self._map_crack_time
+        self.pool_size = self._calculate_pool_size() 
+        self.complexity = self._check_password_complexity()
+        self.crack_time = self._format_crack_time()
 
     def check_is_short(self) -> bool:
         return True if self.length < 6 else False
@@ -42,8 +42,8 @@ class Password:
             32: "Weak",
             36: "Weak",
             42: "Weak",
-            52: "Weak",
-            58: "Weak",
+            52: "Average",
+            58: "Average",
             62: "Average",
             68: "Average",
             84: "Strong",
@@ -55,34 +55,39 @@ class Password:
         T = pow(self.pool_size, self.length)/computional_capacity
         return T
 
-    def _map_crack_time(self) -> str | tuple:
-        total_time = []
+    def map_crack_time(self) -> str | dict: 
+        total_time = {"years": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
         total_seconds = int(self.estimate_crack_time())
         
-        if total_seconds == 0:
-            return "Immediately"
-
         seconds = total_seconds % 60
-        total_time.append(seconds)
         total_minutes = total_seconds // 60
         
-        
         minutes = total_minutes % 60
-        total_time.append(minutes)
         total_hours = total_minutes // 60
        
-        
         hours = total_hours % 24
-        total_time.append(hours)
         total_days = total_hours // 24
         
-
         days = total_days % 365
-        total_time.append(days)
-        years = float(total_days // 365)
-        total_time.append(years)        
+        years = total_days // 365
+        
+        total_time.update({"years": years, "days": days, "hours": hours, "minutes": minutes, "seconds": seconds})
 
         return total_time
+    
+    def _format_crack_time(self) -> str:
+        crack_time_dict = self.map_crack_time()
+        years, days, hours, minutes, seconds = crack_time_dict["years"], crack_time_dict["days"], crack_time_dict["hours"], crack_time_dict["minutes"], crack_time_dict["seconds"]
+        
+        if years > 0:
+            if years < 1_000_000:
+                return f"{years} years"
+            else:
+                return f"{years:.2e} years"
+        elif days > 0:
+            return f"{days} days"
+        else:
+            return f"{hours}h:{minutes}m:{seconds}s"
     
 class PasswordGenerator:
     def __init__(self, length: int):
@@ -96,12 +101,8 @@ class PasswordGenerator:
 
 class AuthService:
     def __init__(self):
-        self.unlock_hash="abc"
-        self.stored_hash="abc"
+        self.stored_hash="5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
 
-    def _claimStoredHash(self):
-        pass
-    
     def verify_password(self, plain_password: str) -> bool:
         if not plain_password:
             return False
@@ -109,7 +110,7 @@ class AuthService:
         input_hash = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
         return input_hash == self.stored_hash
 
-class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
+class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame): # dodać odczytywanie z właściwego pliku i funkcje
     def __init__(self, master, title, values):
         super().__init__(master, label_text=title)
         self.grid_columnconfigure(0, weight=1)
@@ -128,13 +129,15 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
                 checked_checkboxes.append(checkbox.cget("text"))
         return checked_checkboxes
 
-class PasswordPanel(customtkinter.CTkToplevel):
+class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojawiało sie na górze
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("600x250")
         self.title("Vault")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
+
+        self.confirmation_dialog = None
 
         values = ["value 1", "value 2", "value 3", "value 4", "value 5", "value 6"]
         self.scrollable_checkbox_frame = ScrollablePasswordFrame(
@@ -152,8 +155,9 @@ class PasswordPanel(customtkinter.CTkToplevel):
             self,
             width=137,
             height=30,
-            text="Generate", 
-            fg_color="#1CE634",
+            text="Generate",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#1BD625",
             hover_color="#11841D",
             command=self.button_callback)
         self.gen_button.grid(
@@ -168,6 +172,7 @@ class PasswordPanel(customtkinter.CTkToplevel):
             width=137,
             height=30,
             text="Delete",
+            font=("Helvetica", 16, "bold"),
             fg_color="#E03913",
             hover_color="#831010",
             command=self.button_callback)
@@ -183,6 +188,7 @@ class PasswordPanel(customtkinter.CTkToplevel):
             width=137,
             height=30, 
             text="Copy",
+            font=("Helvetica", 16, "bold"),
             fg_color="#1391E0",
             hover_color="#104483",
             command=self.button_callback)
@@ -198,6 +204,7 @@ class PasswordPanel(customtkinter.CTkToplevel):
             width=137,
             height=30,
             text="Exit",
+            font=("Helvetica", 16, "bold"),
             fg_color="#E0DC13",
             hover_color="#7F8310",
             command=self.button_callback)
@@ -209,25 +216,64 @@ class PasswordPanel(customtkinter.CTkToplevel):
             sticky="e")
     
     def button_callback(self):
-        self.confirmation_dialog=ConfirmationDialog("deletion")
+        if self.confirmation_dialog is None or not self.confirmation_dialog.winfo_exists():
+            self.confirmation_dialog = ConfirmationDialog()
+        else:
+            self.confirmation_dialog.focus() 
 
 class ConfirmationDialog(customtkinter.CTkToplevel):
-    def __init__(self, dialog_type, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("300x200")
+        self.geometry("350x120")
         self.title("Confirm")
-        self.dialog_type = dialog_type
-
-        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
 
         self.label = customtkinter.CTkLabel(
             self, 
-            text=f"Confirm {self.dialog_type}")
+            text=f"Confirm Deletion",
+            font=("Helvetica", 20, "bold"))
         self.label.grid(
             row=0, 
             column=0, 
             padx=0, 
-            pady=(20,0))
+            pady=(20,10),
+            columnspan=2)
+        
+        self.cancel_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Cancel",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#E03913",
+            hover_color="#831010",
+            command=self.cancel_callback) 
+        self.cancel_button.grid(
+            row=1,
+            column=0,
+            padx=(0,170),
+            pady=(20,10))
+        
+        self.accept_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Accept",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#1BD625",
+            hover_color="#11841D",
+            command=self.accept_callback) 
+        self.accept_button.grid(
+            row=1,
+            column=0,
+            padx=(170,0),
+            pady=(20,10))
+
+    def cancel_callback(self):
+        pass
+
+    def accept_callback(self):
+        pass
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -284,16 +330,16 @@ class App(customtkinter.CTk):
             pady=(10,20),
             sticky="w")
 
-        self.password_submit = customtkinter.CTkButton(
+        self.submit_button = customtkinter.CTkButton(
             self,
             width=200,
             height=40,
             text="Submit",
             fg_color="#1f6aa5",
             hover_color="#144871",
-            command=self.button_callback,
-            font=("Helvetica", 14, "bold"))
-        self.password_submit.grid(
+            command=self.submit_password,
+            font=("Helvetica", 16, "bold"))
+        self.submit_button.grid(
             row=4,
             column=0,
             padx=50,
@@ -301,16 +347,16 @@ class App(customtkinter.CTk):
             columnspan=2,
             sticky="w")
         
-        self.generate_password = customtkinter.CTkButton(
+        self.open_panel_button = customtkinter.CTkButton(
             self,
             width=200,
             height=40,
             text="Saved passwords",
-            fg_color="#1CE634",
+            fg_color="#1BD625",
             hover_color="#11841D",
             command=self.auth_access,
-            font=("Helvetica", 14, "bold"))
-        self.generate_password.grid(
+            font=("Helvetica", 16, "bold"))
+        self.open_panel_button.grid(
             row=4,
             column=0,
             padx=50,
@@ -335,26 +381,25 @@ class App(customtkinter.CTk):
         self.crack_time_label = customtkinter.CTkLabel(
             self, text="",
             fg_color="transparent", 
-            font=("Helvetica", 14, "bold"))
+            font=("Helvetica", 20, "bold"))
         self.crack_time_label.grid(
             row=5,
             column=0,
-            padx=20,
+            padx=0,
             pady=20,
             columnspan=2)
     
     def auth_access(self) -> None:
-        self.dialog = customtkinter.CTkInputDialog(text="Type in a password:", title="Authorization")
+        self.dialog = customtkinter.CTkInputDialog(text="Type in password:", title="Authorization")
         user_input = self.dialog.get_input()
-        # if self.auth_service.verify_password(user_input):
-        self.openPanel()
+        if self.auth_service.verify_password(user_input):
+            self.open_panel()
     
-    def openPanel(self) -> None:
-        print("something")
+    def open_panel(self) -> None:
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
             self.toplevel_window = PasswordPanel()  
         else:
-            self.toplevel_window.focus() 
+            self.toplevel_window.focus()
 
     def checkbox_event(self) -> None:
         self.checkbox_state = self.checkbox.get()
@@ -363,34 +408,37 @@ class App(customtkinter.CTk):
         else:
             self.password_field.configure(show="*")
 
-    def button_callback(self) -> None:
+    def submit_password(self) -> None:
         password = Password(self.password_field.get())
         self.show_label(password)
         self.update_progressbar(password)
 
     def show_label(self, password: str) -> None:
-        crack_time = password.crack_time[4]
+        crack_time = password.crack_time
         self.crack_time_label.configure(text=f"Estimated time to crack: {crack_time}")
 
     def update_progressbar(self, password: str) -> None:
-        if password.length < 8 or (password.crack_time[3] < 60 and password.crack_time[4] < 1):
+        crack_time_dict = password.map_crack_time()
+        years, days = crack_time_dict["years"], crack_time_dict["days"]
+
+        if password.length < 8:
             self.progressbar.set(0.1)
             self.progressbar.configure(progress_color="red")
-        elif password.complexity == "Weak" or (password.crack_time[3] <= 120 or password.crack_time[4] < 1):
-            self.progressbar.set(0.2)
-            self.progressbar.configure(progress_color="red")
-        elif password.complexity == "Average" or (password.crack_time[3] > 120 or (password.crack_time[4] >= 1 and password.crack_time[4] < 10)):
-            self.progressbar.set(0.5)
-            self.progressbar.configure(progress_color="yellow")
-        elif password.complexity == "Strong" and (password.crack_time[4] >= 10):
-            self.progressbar.set(0.8)
-            self.progressbar.configure(progress_color="green")
-        elif password.complexity == "Strong+" and (password.crack_time[4] >= 100):
+        elif password.complexity in ("Strong+", "Strong") and years > 10_000:
             self.progressbar.set(1)
             self.progressbar.configure(progress_color="green")
-        else:
+        elif password.complexity in ("Strong" or "Average") and (years > 10):
+            self.progressbar.set(0.8)
+            self.progressbar.configure(progress_color="green")
+        elif password.complexity == "Average" and (days > 120 or years >= 1):
             self.progressbar.set(0.5)
-            self.progressbar.configure(progress_color="gray")
+            self.progressbar.configure(progress_color="yellow")
+        elif password.complexity == "Weak" and (days < 120 and years < 1):
+            self.progressbar.set(0.2)
+            self.progressbar.configure(progress_color="red")
+        else:
+            self.progressbar.set(0.2)
+            self.progressbar.configure(progress_color="red")
             
 app = App()
 app.mainloop()
