@@ -45,7 +45,7 @@ class Password:
             52: "Average",
             58: "Average",
             62: "Average",
-            68: "Average",
+            68: "Strong",
             84: "Strong",
             94: "Strong+"
         }
@@ -129,6 +129,106 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame): # dodać odczyt
                 checked_checkboxes.append(checkbox.cget("text"))
         return checked_checkboxes
 
+# nowe okienko
+# wyświetlanie hasła
+# kopiowanie wyjście
+# autoamtyczne zamkniecie po 30 sekundach
+# pasek z czasem
+
+class GeneratedPasswordPanel(customtkinter.CTkToplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("500x120")
+        self.title("Generator")
+        self.grid_columnconfigure(0, weight=1)
+        self.lift()
+
+        new_password = PasswordGenerator(32)
+
+        self.label = customtkinter.CTkLabel(
+            self,
+            text=new_password.password,
+            font=("Helvetica", 20, "bold"))
+        self.label.grid(
+            row=1,
+            column=0,
+            padx=(0,0),
+            pady=(20,10)
+        )
+
+        self.save_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Save",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#1BD625",
+            hover_color="#11841D",
+            command=self.copy_callback) 
+        self.save_button.grid(
+            row=2,
+            column=0,
+            padx=(0,0),
+            pady=(20,10))
+        
+    def copy_callback():
+        pass
+   
+class DeletionDialog(customtkinter.CTkToplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("350x120")
+        self.title("Confirm")
+        self.lift()
+        self.grid_columnconfigure(0, weight=1)
+
+        self.label = customtkinter.CTkLabel(
+            self, 
+            text=f"Confirm Deletion",
+            font=("Helvetica", 20, "bold"))
+        self.label.grid(
+            row=0, 
+            column=0, 
+            padx=0, 
+            pady=(20,10),
+            columnspan=2)
+        
+        self.cancel_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Cancel",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#C8C511",
+            hover_color="#7F8310",
+            command=self.cancel_callback) 
+        self.cancel_button.grid(
+            row=1,
+            column=0,
+            padx=(0,170),
+            pady=(20,10))
+        
+        self.delete_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Delete",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#E03913",
+            hover_color="#831010",
+            command=self.delete_callback) 
+        self.delete_button.grid(
+            row=1,
+            column=0,
+            padx=(170,0),
+            pady=(20,10))
+        
+    def cancel_callback(self):
+        pass
+
+    def delete_callback(self):
+        pass
+
 class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojawiało sie na górze
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -137,6 +237,7 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        self.gen_panel = None
         self.confirmation_dialog = None
 
         values = ["value 1", "value 2", "value 3", "value 4", "value 5", "value 6"]
@@ -159,7 +260,7 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             font=("Helvetica", 16, "bold"),
             fg_color="#1BD625",
             hover_color="#11841D",
-            command=self.button_callback)
+            command=self.gen_callback)
         self.gen_button.grid(
             row=3, 
             column=0, 
@@ -175,7 +276,7 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             font=("Helvetica", 16, "bold"),
             fg_color="#E03913",
             hover_color="#831010",
-            command=self.button_callback)
+            command=self.del_callback)
         self.del_button.grid(
             row=3, 
             column=0, 
@@ -191,7 +292,7 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             font=("Helvetica", 16, "bold"),
             fg_color="#1391E0",
             hover_color="#104483",
-            command=self.button_callback)
+            command=self.copy_callback)
         self.copy_button.grid(
             row=3, 
             column=0, 
@@ -205,9 +306,9 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             height=30,
             text="Exit",
             font=("Helvetica", 16, "bold"),
-            fg_color="#E0DC13",
+            fg_color="#C8C511",
             hover_color="#7F8310",
-            command=self.button_callback)
+            command=self.destroy)
         self.exit_button.grid(
             row=3, 
             column=0, 
@@ -215,64 +316,19 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             pady=10, 
             sticky="e")
     
-    def button_callback(self):
+    def gen_callback(self):
+        if self.gen_panel is None or not self.gen_panel.winfo_exists():
+            self.gen_panel = GeneratedPasswordPanel()
+        else:
+            self.gen_panel.focus() 
+
+    def del_callback(self):
         if self.confirmation_dialog is None or not self.confirmation_dialog.winfo_exists():
-            self.confirmation_dialog = ConfirmationDialog()
+            self.confirmation_dialog = DeletionDialog()
         else:
             self.confirmation_dialog.focus() 
 
-class ConfirmationDialog(customtkinter.CTkToplevel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.geometry("350x120")
-        self.title("Confirm")
-        self.grid_columnconfigure(0, weight=1)
-
-        self.label = customtkinter.CTkLabel(
-            self, 
-            text=f"Confirm Deletion",
-            font=("Helvetica", 20, "bold"))
-        self.label.grid(
-            row=0, 
-            column=0, 
-            padx=0, 
-            pady=(20,10),
-            columnspan=2)
-        
-        self.cancel_button = customtkinter.CTkButton(
-            self,
-            width=137,
-            height=30,
-            text="Cancel",
-            font=("Helvetica", 16, "bold"),
-            fg_color="#E03913",
-            hover_color="#831010",
-            command=self.cancel_callback) 
-        self.cancel_button.grid(
-            row=1,
-            column=0,
-            padx=(0,170),
-            pady=(20,10))
-        
-        self.accept_button = customtkinter.CTkButton(
-            self,
-            width=137,
-            height=30,
-            text="Accept",
-            font=("Helvetica", 16, "bold"),
-            fg_color="#1BD625",
-            hover_color="#11841D",
-            command=self.accept_callback) 
-        self.accept_button.grid(
-            row=1,
-            column=0,
-            padx=(170,0),
-            pady=(20,10))
-
-    def cancel_callback(self):
-        pass
-
-    def accept_callback(self):
+    def copy_callback():
         pass
 
 class App(customtkinter.CTk):
@@ -282,9 +338,6 @@ class App(customtkinter.CTk):
         
         self.auth_service = AuthService()
         self.toplevel_window = None
-
-        new_password = PasswordGenerator(32)
-        print(new_password.password)
 
         self.grid_columnconfigure(0, weight=1)
 
@@ -427,7 +480,7 @@ class App(customtkinter.CTk):
         elif password.complexity in ("Strong+", "Strong") and years > 10_000:
             self.progressbar.set(1)
             self.progressbar.configure(progress_color="green")
-        elif password.complexity in ("Strong" or "Average") and (years > 10):
+        elif password.complexity in ("Strong" or "Average") and (years > 100):
             self.progressbar.set(0.8)
             self.progressbar.configure(progress_color="green")
         elif password.complexity == "Average" and (days > 120 or years >= 1):
