@@ -4,6 +4,7 @@ import hashlib
 from math import pow
 import customtkinter
 import pyperclip
+import timeit
 
 class Password:
     def __init__(self, password: str):
@@ -151,6 +152,22 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame): # dodać odczyt
 # 50% zolty 25% czerwony
 # po 30 sekundach zamkniecie progressbara
 
+class TimeObject:
+    def __init__(self, duration: int):
+        self.start = timeit.timeit()
+        self.duration = duration
+
+    def count_time(self) -> int:
+        current_time = timeit.timeit() 
+        return int(current_time - self.start)
+
+    def is_elapsed(self) -> bool:
+        current_time = timeit.timeit()
+        if(self.start + self.duration - current_time >= 0):
+            return True
+        else:
+            return False
+
 class GeneratedPasswordPanel(customtkinter.CTkToplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -158,6 +175,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
         self.title("Generator")
         self.grid_columnconfigure(0, weight=1)
         self.lift()
+        self.time = TimeObject(30)
 
         new_password = PasswordGenerator(32)
 
@@ -217,13 +235,19 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
             pady=(20,10),
             sticky="e")
 
+        self.update_progressbar()
+
     def save_callback(self) -> str:
         vault = VaultHandler()
         new_password = self.label.cget("text")
         vault.save_password(self, new_password)
 
     def update_progressbar(self) -> None:
-        pass
+        if(self.time.is_elapsed != True):
+            print(self.time.count_time())
+            progress = self.time.count_time() / 30
+            self.progressbar.set(progress)
+            self.progressbar.configure(progress_color="blue")
    
 class DeletionDialog(customtkinter.CTkToplevel):
     def __init__(self, *args, **kwargs):
