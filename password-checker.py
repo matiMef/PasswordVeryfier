@@ -3,6 +3,7 @@ import secrets
 import hashlib
 from math import pow
 import customtkinter
+import pyperclip
 
 class Password:
     def __init__(self, password: str):
@@ -88,7 +89,7 @@ class Password:
             return f"{days} days"
         else:
             return f"{hours}h:{minutes}m:{seconds}s"
-    
+
 class PasswordGenerator:
     def __init__(self, length: int):
         self.length = length
@@ -98,6 +99,22 @@ class PasswordGenerator:
         alphabet = string.ascii_letters + string.digits + string.punctuation
         secure_password = ''.join(secrets.choice(alphabet) for i in range(self.length))
         return secure_password
+
+class VaultHandler:
+    def __init__(self, path):
+        self.path = ""
+    
+    def open_file(self, path):
+        pass
+    
+    def close_file(self, path):
+        pass
+
+    def save_password(self, new_password):
+        pass
+    
+    def delete_password(self, id):
+        pass
 
 class AuthService:
     def __init__(self):
@@ -129,21 +146,33 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame): # dodać odczyt
                 checked_checkboxes.append(checkbox.cget("text"))
         return checked_checkboxes
 
-# nowe okienko
-# wyświetlanie hasła
-# kopiowanie wyjście
-# autoamtyczne zamkniecie po 30 sekundach
-# pasek z czasem
+# utworzenie 30 sekundowego timera
+# co sekunde update progress baru
+# 50% zolty 25% czerwony
+# po 30 sekundach zamkniecie progressbara
 
 class GeneratedPasswordPanel(customtkinter.CTkToplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("500x120")
+        self.geometry("500x200")
         self.title("Generator")
         self.grid_columnconfigure(0, weight=1)
         self.lift()
 
         new_password = PasswordGenerator(32)
+
+        self.progressbar = customtkinter.CTkProgressBar(
+            self,
+            width=500,
+            height=5,
+            orientation="horizontal")
+        self.progressbar.grid(
+            row=0,
+            column=0,
+            padx=20,
+            pady=(20,10))
+        self.progressbar.set(1)
+        self.progressbar.configure(progress_color="green")
 
         self.label = customtkinter.CTkLabel(
             self,
@@ -153,8 +182,24 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
             row=1,
             column=0,
             padx=(0,0),
-            pady=(20,10)
+            pady=(10,10)
         )
+
+        self.exit_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30,
+            text="Exit",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#C8C511",
+            hover_color="#7F8310",
+            command=self.destroy) 
+        self.exit_button.grid(
+            row=2,
+            column=0,
+            padx=(50,0),
+            pady=(20,10),
+            sticky="w")
 
         self.save_button = customtkinter.CTkButton(
             self,
@@ -164,14 +209,20 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
             font=("Helvetica", 16, "bold"),
             fg_color="#1BD625",
             hover_color="#11841D",
-            command=self.copy_callback) 
+            command=self.save_callback) 
         self.save_button.grid(
             row=2,
             column=0,
-            padx=(0,0),
-            pady=(20,10))
-        
-    def copy_callback():
+            padx=(0,50),
+            pady=(20,10),
+            sticky="e")
+
+    def save_callback(self) -> str:
+        vault = VaultHandler()
+        new_password = self.label.cget("text")
+        vault.save_password(self, new_password)
+
+    def update_progressbar(self) -> None:
         pass
    
 class DeletionDialog(customtkinter.CTkToplevel):
@@ -201,7 +252,7 @@ class DeletionDialog(customtkinter.CTkToplevel):
             font=("Helvetica", 16, "bold"),
             fg_color="#C8C511",
             hover_color="#7F8310",
-            command=self.cancel_callback) 
+            command=self.destroy) 
         self.cancel_button.grid(
             row=1,
             column=0,
@@ -222,9 +273,6 @@ class DeletionDialog(customtkinter.CTkToplevel):
             column=0,
             padx=(170,0),
             pady=(20,10))
-        
-    def cancel_callback(self):
-        pass
 
     def delete_callback(self):
         pass
@@ -328,8 +376,10 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
         else:
             self.confirmation_dialog.focus() 
 
-    def copy_callback():
-        pass
+    def copy_callback(self):
+        pyperclip.copy('password')
+        # po 30 sekundach wyczyscic mozliwe że trezba dodac czyszczenie windows/linux
+        pyperclip.copy('')
 
 class App(customtkinter.CTk):
     def __init__(self):
