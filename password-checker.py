@@ -4,7 +4,7 @@ import hashlib
 from math import pow
 import customtkinter
 import pyperclip
-import timeit
+import time
 
 class Password:
     def __init__(self, password: str):
@@ -103,7 +103,8 @@ class PasswordGenerator:
 
 class VaultHandler:
     def __init__(self, path):
-        self.path = ""
+        self.path = path
+        self.file = ""
     
     def open_file(self, path):
         pass
@@ -128,7 +129,7 @@ class AuthService:
         input_hash = hashlib.sha256(plain_password.encode('utf-8')).hexdigest()
         return input_hash == self.stored_hash
 
-class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame): # dodać odczytywanie z właściwego pliku i funkcje
+class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, title, values):
         super().__init__(master, label_text=title)
         self.grid_columnconfigure(0, weight=1)
@@ -136,34 +137,44 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame): # dodać odczyt
         self.checkboxes = []
 
         for i, value in enumerate(self.values):
-            checkbox = customtkinter.CTkCheckBox(self, text=value)
+            checkbox = customtkinter.CTkCheckBox(
+                self, 
+                text=value, 
+                text_color="white", 
+                text_color_disabled="gray",
+                command=self.verifyState
+            )
             checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
             self.checkboxes.append(checkbox)
 
-    def get(self):
-        checked_checkboxes = []
+    def verifyState(self):
+        any_checked = any(cb.get() for cb in self.checkboxes)
+        
         for checkbox in self.checkboxes:
-            if checkbox.get() == 1:
-                checked_checkboxes.append(checkbox.cget("text"))
-        return checked_checkboxes
+            if checkbox.get():
+                checkbox.configure(state="normal")
+            else:
+                new_state = "disabled" if any_checked else "normal"
+                checkbox.configure(state=new_state)
 
-# utworzenie 30 sekundowego timera
-# co sekunde update progress baru
-# 50% zolty 25% czerwony
-# po 30 sekundach zamkniecie progressbara
-
+    def get(self) -> str | None:
+        for checkbox in self.checkboxes:
+            if checkbox.get():
+                return checkbox.cget("text")
+        return None
+    
 class TimeObject:
     def __init__(self, duration: int):
-        self.start = timeit.timeit()
+        self.start = time.time()
         self.duration = duration
 
     def count_time(self) -> int:
-        current_time = timeit.timeit() 
+        current_time = time.time() 
         return int(current_time - self.start)
 
     def is_elapsed(self) -> bool:
-        current_time = timeit.timeit()
-        if(self.start + self.duration - current_time >= 0):
+        current_time = time.time()
+        if self.start + self.duration - current_time <= 0:
             return True
         else:
             return False
@@ -220,7 +231,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
             sticky="w")
 
         self.save_button = customtkinter.CTkButton(
-            self,
+            self,   
             width=137,
             height=30,
             text="Save",
@@ -243,11 +254,18 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
         vault.save_password(self, new_password)
 
     def update_progressbar(self) -> None:
-        if(self.time.is_elapsed != True):
-            print(self.time.count_time())
-            progress = self.time.count_time() / 30
+        if self.time.is_elapsed() != True:
+            progress = (30 - self.time.count_time())/30
             self.progressbar.set(progress)
-            self.progressbar.configure(progress_color="blue")
+            if progress <= 0.33:
+                self.progressbar.configure(progress_color="red")
+            elif progress <= 0.67:
+                self.progressbar.configure(progress_color="yellow")
+            else:
+                self.progressbar.configure(progress_color="green")
+            self.after(1000, self.update_progressbar)
+        else:
+            self.destroy()
    
 class DeletionDialog(customtkinter.CTkToplevel):
     def __init__(self, *args, **kwargs):
@@ -274,8 +292,8 @@ class DeletionDialog(customtkinter.CTkToplevel):
             height=30,
             text="Cancel",
             font=("Helvetica", 16, "bold"),
-            fg_color="#C8C511",
-            hover_color="#7F8310",
+            fg_color="#1391E0",
+            hover_color="#104483",
             command=self.destroy) 
         self.cancel_button.grid(
             row=1,
@@ -301,7 +319,7 @@ class DeletionDialog(customtkinter.CTkToplevel):
     def delete_callback(self):
         pass
 
-class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojawiało sie na górze
+class PasswordPanel(customtkinter.CTkToplevel): 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("600x250")
@@ -340,6 +358,22 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             pady=10, 
             sticky="w")
 
+        self.copy_button = customtkinter.CTkButton(
+            self,
+            width=137,
+            height=30, 
+            text="Copy",
+            font=("Helvetica", 16, "bold"),
+            fg_color="#1391E0",
+            hover_color="#104483",
+            command=self.copy_callback)
+        self.copy_button.grid(
+            row=3, 
+            column=0, 
+            padx=157,
+            pady=10, 
+            sticky="w")
+
         self.del_button = customtkinter.CTkButton(
             self,
             width=137,
@@ -353,22 +387,6 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
             row=3, 
             column=0, 
             padx=157, 
-            pady=10, 
-            sticky="w")
-        
-        self.copy_button = customtkinter.CTkButton(
-            self,
-            width=137,
-            height=30, 
-            text="Copy",
-            font=("Helvetica", 16, "bold"),
-            fg_color="#1391E0",
-            hover_color="#104483",
-            command=self.copy_callback)
-        self.copy_button.grid(
-            row=3, 
-            column=0, 
-            padx=10, 
             pady=10, 
             sticky="e")
         
@@ -384,7 +402,7 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
         self.exit_button.grid(
             row=3, 
             column=0, 
-            padx=157, 
+            padx=10, 
             pady=10, 
             sticky="e")
     
@@ -402,18 +420,17 @@ class PasswordPanel(customtkinter.CTkToplevel): # poprawić żęby okienko pojaw
 
     def copy_callback(self):
         pyperclip.copy('password')
-        # po 30 sekundach wyczyscic mozliwe że trezba dodac czyszczenie windows/linux
         pyperclip.copy('')
 
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.geometry("600x400")
-        
         self.auth_service = AuthService()
         self.toplevel_window = None
-
         self.grid_columnconfigure(0, weight=1)
+
+        vpf=(self.register(self._validate_pass_field), "%P")
 
         self.app_title = customtkinter.CTkLabel(
             self,
@@ -427,13 +444,14 @@ class App(customtkinter.CTk):
             padx=20,
             pady=(20, 0),
             columnspan=2)
-        
-        # , validatecommand=self.validate_field_input
+
         self.password_field = customtkinter.CTkEntry(
             self,
             width=500,
             height=45,
             placeholder_text="Password",
+            validate="key",
+            validatecommand=vpf,
             font=("Helvetica", 16), show="*")
         self.password_field.grid(
             row=1,
@@ -516,6 +534,15 @@ class App(customtkinter.CTk):
             pady=20,
             columnspan=2)
     
+    def _validate_pass_field(self, new_pass: str) -> bool:
+        if new_pass == "":
+            return True
+        
+        if len(new_pass) > 128:
+            return False
+        
+        return True
+
     def auth_access(self) -> None:
         self.dialog = customtkinter.CTkInputDialog(text="Type in password:", title="Authorization")
         user_input = self.dialog.get_input()
