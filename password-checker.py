@@ -5,6 +5,7 @@ from math import pow
 import customtkinter
 import pyperclip
 import time
+import json
 
 class Password:
     def __init__(self, password: str):
@@ -102,14 +103,20 @@ class PasswordGenerator:
         return secure_password
 
 class VaultHandler:
-    def __init__(self, path):
+    def __init__(self, name: str, path: str) -> json:
+        self.filename = name
         self.path = path
-        self.file = ""
-    
-    def open_file(self, path):
+        self.file_path = path + name
+        self.decoded_file = None
+        self.encoded_file = None
+        
+    def load_file(self, path):
         pass
-    
-    def close_file(self, path):
+
+    def decode_file(self, file):
+        pass
+
+    def encode_file(self, file):
         pass
 
     def save_password(self, new_password):
