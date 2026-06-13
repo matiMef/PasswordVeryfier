@@ -114,9 +114,11 @@ class StoredPasswords:
         self.passwords = []
 
     def _encrypt_password(self, password: str) -> str:
+        # szyfrowanie pojedycznego hasła przy wpisywaniu do pliku json
         pass
 
     def _decrypt_password(self, id: int) -> str:
+        # odszyfrowanie pojedycznego hasła przy pobieraniu z odszyfrowanego pliku json
         pass
 
     def get_passwords(self) -> None:
@@ -126,6 +128,7 @@ class StoredPasswords:
         self.passwords = passwords
 
     def add_password(self, name: str, password: str) -> None:
+        # poprawa id
         new_id = len(self.passwords) + 1
         new_name = name
         new_password = self._encrypt_password(password)
@@ -138,43 +141,36 @@ class StoredPasswords:
 class VaultHandler:
     def __init__(self, name: str, path: str):
         self.filename = name
+        # poprawa ścieżki
         self.filepath = path + "/" + name
-        self.encoded_file = self.create_file()
         
     def check_file(self) -> bool:
         return os.path.exists(self.filepath)
 
-    def create_file(self) -> json:
+    def create_file(self) -> None:
         if self.check_file():
-            with open(self.filepath, "r", encoding="utf-8") as file:
-                return file
-        
+            return
+
         with open(self.filepath, "w", encoding="utf-8") as file:
+            # tworzenie soli
+            # wpisywanei soli
             file.write("{}")
-            return file
 
-    def _decrypt_file(self) -> json:
-        secret_key = "key"
-        # otwarcie pliku
-        # zcyztanie soli
-        # odkodowanie pliku
-        # zwrócenie pliku
-
-    def _encrypt_file(self) -> None:
-        secret_key = "key"
-        new_encoded_file = None
-        # zaszyfrowanie pliku
-        self.encoded_file = new_encoded_file
-        # zapisanie pliku
-
-    def map_password(self) -> tuple:
-        # uruchomienie dekodowania pliku
-        # pobranie haseł z pliku
+    def _decrypt_file(self) -> tuple:
         with open(self.filepath, "r", encoding="utf-8") as file:
-            passwords_obj = json.load(self.file)
-        # mapowanie passwords_obj na tablice obiektów JSONpassword
+            encrypted_file = file.read(file)
+            # zczytanie soli
+            # odkodowanie pliku
+            passwords_obj = json.loads(encrypted_file)
         return passwords_obj
-    
+        
+    def _encrypt_file(self, passwords: tuple) -> None:
+        # dodawanie soli
+        # szyfrowanie pliku
+        encoded_file = json.dumps(passwords)
+        with open(self.filepath, "w", encoding="utf-8") as file:
+            file.write(encoded_file)
+
 class AuthService:
     def __init__(self):
         self.stored_hash="5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
