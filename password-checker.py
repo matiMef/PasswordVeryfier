@@ -6,6 +6,7 @@ import customtkinter
 import pyperclip
 import time
 import json
+import os
 
 class Password:
     def __init__(self, password: str):
@@ -102,29 +103,78 @@ class PasswordGenerator:
         secure_password = ''.join(secrets.choice(alphabet) for i in range(self.length))
         return secure_password
 
-class VaultHandler:
-    def __init__(self, name: str, path: str) -> json:
-        self.filename = name
-        self.path = path
-        self.file_path = path + name
-        self.decoded_file = None
-        self.encoded_file = None
+class JsonPassword:
+    def __init__(self, id: int, name: str, password: str):
+        self.id = id
+        self.name = name
+        self.encrypted_password = password
+
+class StoredPasswords:
+    def __init__(self):
+        self.passwords = []
+
+    def _encrypt_password(self, password: str) -> str:
+        pass
+
+    def _decrypt_password(self, id: int) -> str:
+        pass
+
+    def get_passwords(self) -> None:
+        return self.passwords
+
+    def set_passwords(self, passwords: list) -> None:
+        self.passwords = passwords
+
+    def add_password(self, name: str, password: str) -> None:
+        new_id = len(self.passwords) + 1
+        new_name = name
+        new_password = self._encrypt_password(password)
+        new_password_obj = JsonPassword(new_id, new_name, new_password)
+        self.passwords.append(new_password_obj)
+
+    def delete_password(self, id: int) -> None:
+        self.passwords = [p for p in self.passwords if p.id != id]
         
-    def load_file(self, path):
-        pass
+class VaultHandler:
+    def __init__(self, name: str, path: str):
+        self.filename = name
+        self.filepath = path + "/" + name
+        self.encoded_file = self.create_file()
+        
+    def check_file(self) -> bool:
+        return os.path.exists(self.filepath)
 
-    def decode_file(self, file):
-        pass
+    def create_file(self) -> json:
+        if self.check_file():
+            with open(self.filepath, "r", encoding="utf-8") as file:
+                return file
+        
+        with open(self.filepath, "w", encoding="utf-8") as file:
+            file.write("{}")
+            return file
 
-    def encode_file(self, file):
-        pass
+    def _decrypt_file(self) -> json:
+        secret_key = "key"
+        # otwarcie pliku
+        # zcyztanie soli
+        # odkodowanie pliku
+        # zwrócenie pliku
 
-    def save_password(self, new_password):
-        pass
+    def _encrypt_file(self) -> None:
+        secret_key = "key"
+        new_encoded_file = None
+        # zaszyfrowanie pliku
+        self.encoded_file = new_encoded_file
+        # zapisanie pliku
+
+    def map_password(self) -> tuple:
+        # uruchomienie dekodowania pliku
+        # pobranie haseł z pliku
+        with open(self.filepath, "r", encoding="utf-8") as file:
+            passwords_obj = json.load(self.file)
+        # mapowanie passwords_obj na tablice obiektów JSONpassword
+        return passwords_obj
     
-    def delete_password(self, id):
-        pass
-
 class AuthService:
     def __init__(self):
         self.stored_hash="5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
