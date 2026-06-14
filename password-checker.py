@@ -7,6 +7,9 @@ import pyperclip
 import time
 import json
 import os
+from hashlib import pbkdf2_hmac
+from cryptography.fernet import Fernet
+from base64 import b64decode, b64encode
 
 class Password:
     def __init__(self, password: str):
@@ -113,14 +116,6 @@ class StoredPasswords:
     def __init__(self):
         self.passwords = []
 
-    def _encrypt_password(self, password: str) -> str:
-        # szyfrowanie pojedycznego hasła przy wpisywaniu do pliku json
-        pass
-
-    def _decrypt_password(self, id: int) -> str:
-        # odszyfrowanie pojedycznego hasła przy pobieraniu z odszyfrowanego pliku json
-        pass
-
     def get_passwords(self) -> None:
         return self.passwords
 
@@ -128,11 +123,12 @@ class StoredPasswords:
         self.passwords = passwords
 
     def add_password(self, name: str, password: str) -> None:
-        # poprawa id
-        new_id = len(self.passwords) + 1
-        new_name = name
-        new_password = self._encrypt_password(password)
-        new_password_obj = JsonPassword(new_id, new_name, new_password)
+        if not self.passwords:
+            new_id = 1
+        else:
+            new_id = max(p.id for p in self.passwords) + 1
+            
+        new_password_obj = JsonPassword(new_id, name, password)
         self.passwords.append(new_password_obj)
 
     def delete_password(self, id: int) -> None:
@@ -141,8 +137,7 @@ class StoredPasswords:
 class VaultHandler:
     def __init__(self, name: str, path: str):
         self.filename = name
-        # poprawa ścieżki
-        self.filepath = path + "/" + name
+        self.filepath = os.path.join(path, name)
         
     def check_file(self) -> bool:
         return os.path.exists(self.filepath)
@@ -151,25 +146,34 @@ class VaultHandler:
         if self.check_file():
             return
 
-        with open(self.filepath, "w", encoding="utf-8") as file:
-            # tworzenie soli
-            # wpisywanei soli
-            file.write("{}")
+        with open(self.filepath, "wb") as file:
+            self._encrypt_file([])
 
     def _decrypt_file(self) -> tuple:
-        with open(self.filepath, "r", encoding="utf-8") as file:
-            encrypted_file = file.read(file)
-            # zczytanie soli
-            # odkodowanie pliku
-            passwords_obj = json.loads(encrypted_file)
+        with open(self.filepath, "rb") as file:
+            file_content = file.read()
+        
+        salt = file_content[:16]
+        encrypted_file = file_content[16:]
+        password = b"password" 
+        key = pbkdf2_hmac('sha256', password, salt, 647149)
+        key = b64encode(key)
+        f = Fernet(key)
+        decrypted_file = f.decrypt(encrypted_file)
+        passwords_obj = json.loads(decrypted_file.decode("utf-8"))
         return passwords_obj
         
     def _encrypt_file(self, passwords: tuple) -> None:
-        # dodawanie soli
-        # szyfrowanie pliku
+        salt = secrets.token_bytes(16)
+        password = b"password"
+        key = pbkdf2_hmac('sha256', password, salt, 647149)
+        key = b64encode(key)
+        f = Fernet(key)
         encoded_file = json.dumps(passwords)
-        with open(self.filepath, "w", encoding="utf-8") as file:
-            file.write(encoded_file)
+        token = f.encrypt(encoded_file.encode("utf-8"))
+        with open(self.filepath, "wb") as file:
+            file.write(salt)
+            file.write(token)
 
 class AuthService:
     def __init__(self):
