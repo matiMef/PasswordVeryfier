@@ -8,7 +8,7 @@ import time
 import json
 import os
 from hashlib import pbkdf2_hmac
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from base64 import b64decode, b64encode
 
 class Password:
@@ -116,18 +116,14 @@ class StoredPasswords:
     def __init__(self):
         self.passwords = []
 
-    def get_passwords(self) -> None:
+    def get_passwords(self) -> list:
         return self.passwords
 
     def set_passwords(self, passwords: list) -> None:
         self.passwords = passwords
 
     def add_password(self, name: str, password: str) -> None:
-        if not self.passwords:
-            new_id = 1
-        else:
-            new_id = max(p.id for p in self.passwords) + 1
-            
+        new_id = max([p.id for p in self.passwords], default=0) + 1    
         new_password_obj = JsonPassword(new_id, name, password)
         self.passwords.append(new_password_obj)
 
@@ -147,29 +143,46 @@ class VaultHandler:
             return
 
         with open(self.filepath, "wb") as file:
-            self._encrypt_file([])
+            self._encrypt_file([], "password")
 
-    def _decrypt_file(self) -> tuple:
+    def decrypt_and_load(self, master_password: str) -> list:
+        raw_data = self._decrypt_file(master_password)
+        
+        loaded_passwords = []
+        for item in raw_data:
+            obj = JsonPassword(item["id"], item["name"], item["password"])
+            loaded_passwords.append(obj)
+        return loaded_passwords
+
+    def _decrypt_file(self, master_password: str) -> list:
         with open(self.filepath, "rb") as file:
             file_content = file.read()
         
         salt = file_content[:16]
         encrypted_file = file_content[16:]
-        password = b"password" 
-        key = pbkdf2_hmac('sha256', password, salt, 647149)
-        key = b64encode(key)
-        f = Fernet(key)
-        decrypted_file = f.decrypt(encrypted_file)
-        passwords_obj = json.loads(decrypted_file.decode("utf-8"))
-        return passwords_obj
         
-    def _encrypt_file(self, passwords: tuple) -> None:
-        salt = secrets.token_bytes(16)
-        password = b"password"
-        key = pbkdf2_hmac('sha256', password, salt, 647149)
+        password_bytes = master_password.encode("utf-8") 
+        key = pbkdf2_hmac('sha256', password_bytes, salt, 647149)
         key = b64encode(key)
         f = Fernet(key)
-        encoded_file = json.dumps(passwords)
+        
+        try:
+            decrypted_file = f.decrypt(encrypted_file)
+            return json.loads(decrypted_file.decode("utf-8"))
+        except InvalidToken:
+            raise ValueError("Wrong master password")
+        
+    def _encrypt_file(self, password_objects: list, master_password: str) -> None:
+        salt = secrets.token_bytes(16)
+        
+        password_bytes = master_password.encode("utf-8")
+        key = pbkdf2_hmac('sha256', password_bytes, salt, 647149)
+        key = b64encode(key)
+        f = Fernet(key)
+        
+        serializable_data = [p.to_dict() for p in password_objects]
+        encoded_file = json.dumps(serializable_data)
+        
         token = f.encrypt(encoded_file.encode("utf-8"))
         with open(self.filepath, "wb") as file:
             file.write(salt)
@@ -386,12 +399,20 @@ class PasswordPanel(customtkinter.CTkToplevel):
 
         self.gen_panel = None
         self.confirmation_dialog = None
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        vault = VaultHandler("vault.json", current_dir)
+        stored_passwords = StoredPasswords()
+        vault.create_file()
+        raw_data = vault.decrypt_and_load("password")
+        stored_passwords.set_passwords(raw_data)
+        passwords_list = stored_passwords.get_passwords()
 
-        values = ["value 1", "value 2", "value 3", "value 4", "value 5", "value 6"]
+        names_list = [p.name for p in passwords_list if getattr(p, 'name', None)]
+        
         self.scrollable_checkbox_frame = ScrollablePasswordFrame(
             self, 
             title="Saved passwords", 
-            values=values)
+            values=names_list)
         self.scrollable_checkbox_frame.grid(
             row=0, 
             column=0, 
