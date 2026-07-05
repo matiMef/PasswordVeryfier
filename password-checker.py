@@ -9,7 +9,7 @@ import json
 import os
 from hashlib import pbkdf2_hmac
 from cryptography.fernet import Fernet, InvalidToken
-from base64 import b64decode, b64encode
+from base64 import b64encode
 
 class Password:
     def __init__(self, password: str):
@@ -134,6 +134,9 @@ class StoredPasswords:
         new_password_obj = JsonPassword(new_id, name, password)
         self.passwords.append(new_password_obj)
 
+    def get_password(self, id):
+        return [p.encrypted_password for p in self.passwords if id == p.id] 
+
     def delete_password(self, id: int) -> None:
         self.passwords = [p for p in self.passwords if p.id != id]
         
@@ -237,6 +240,7 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
                 text_color="white", 
                 text_color_disabled="gray",
                 command=self.verifyState)
+            checkbox.database_id = value.id
             checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
             self.checkboxes.append(checkbox)
 
@@ -250,10 +254,10 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
                 new_state = "disabled" if any_checked else "normal"
                 checkbox.configure(state=new_state)
 
-    def get(self) -> str | None:
+    def get(self) -> int | None:
         for checkbox in self.checkboxes:
-            if checkbox.get():
-                return checkbox.cget("text")
+            if checkbox.get() == 1:
+                return checkbox.database_id
         return None
     
 class TimeObject:
@@ -542,10 +546,25 @@ class PasswordPanel(customtkinter.CTkToplevel):
         else:
             self.confirmation_dialog.focus() 
 
-    def copy_callback(self):
-        pyperclip.copy('password')
-        pyperclip.copy('')
+    def clear(self):
+        pyperclip.copy(' ')
+        self.destroy
 
+    def copy_callback(self):
+        selected_id = self.scrollable_checkbox_frame.get()
+    
+        if selected_id is None:
+            return
+
+        copy_id = self.scrollable_checkbox_frame.get()
+        matching_password = self.stored_passwords.get_password(copy_id)
+
+        if matching_password:
+            pure_password_string = matching_password[0]
+        
+        pyperclip.copy(pure_password_string)
+        self.after(30000, self.clear)
+        
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
