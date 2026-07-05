@@ -1,4 +1,5 @@
-import string, secrets
+from secrets import choice
+from string import ascii_letters, digits, punctuation
 
 class PasswordGenerator:
     def __init__(self, length: int):
@@ -6,6 +7,5 @@ class PasswordGenerator:
         self.password = self._generate_password()
 
     def _generate_password(self) -> str:
-        alphabet = string.ascii_letters + string.digits + string.punctuation
-        secure_password = ''.join(secrets.choice(alphabet) for i in range(self.length))
-        return secure_password
+        alphabet = ascii_letters + digits + punctuation
+        return ''.join(choice(alphabet) for i in range(self.length))

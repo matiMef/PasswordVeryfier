@@ -1,4 +1,6 @@
 import customtkinter
+from Backend.generator import PasswordGenerator
+from Utilities.time import TimeObject
 
 class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
     def __init__(self, master, title, values):

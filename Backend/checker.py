@@ -1,5 +1,5 @@
-import string
 from math import pow
+from string import ascii_lowercase, ascii_uppercase, digits, punctuation
 
 class Password:
     def __init__(self, password: str):
@@ -13,16 +13,16 @@ class Password:
         return True if self.length < 6 else False
 
     def is_any_lower(self) -> bool:
-        return True if any(char in string.ascii_lowercase for char in self.password) else False
+        return True if any(char in ascii_lowercase for char in self.password) else False
         
     def is_any_upper(self) -> bool:
-        return True if any(char in string.ascii_uppercase for char in self.password) else False
+        return True if any(char in ascii_uppercase for char in self.password) else False
         
     def is_any_digit(self) -> bool:
-        return True if any(char in string.digits for char in self.password) else False
+        return True if any(char in digits for char in self.password) else False
         
     def is_any_special(self) -> bool:
-        return True if any(char in string.punctuation for char in self.password) else False
+        return True if any(char in punctuation for char in self.password) else False
     
     def _calculate_pool_size(self) -> int:
         pool_size = 0
@@ -48,6 +48,7 @@ class Password:
         }
         return complexity_map.get(self.pool_size, "Unknown")
 
+    # To do
     def estimate_crack_time(self, computional_capacity: float = 3e11) -> float:
         T = pow(self.pool_size, self.length)/computional_capacity
         return T
