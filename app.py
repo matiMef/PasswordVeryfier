@@ -1,9 +1,9 @@
-import customtkinter
+from customtkinter import CTk, CTkLabel, CTkEntry, CTkCheckBox, CTkButton, StringVar, CTkProgressBar, CTkInputDialog
 from Backend.vault import AuthService
 from Backend.checker import Password
 from Interface.passwords_panel import PasswordPanel
 
-class App(customtkinter.CTk):
+class App(CTk):
     def __init__(self):
         super().__init__()
         self.geometry("600x400")
@@ -13,7 +13,7 @@ class App(customtkinter.CTk):
 
         self.auth_service = AuthService()
 
-        self.app_title = customtkinter.CTkLabel(
+        self.app_title = CTkLabel(
             self,
             text="Check password strength",
             fg_color="transparent",
@@ -25,7 +25,7 @@ class App(customtkinter.CTk):
             pady=(20, 0),
             columnspan=2)
 
-        self.checker_field = customtkinter.CTkEntry(
+        self.checker_field = CTkEntry(
             self,
             width=500,
             height=45,
@@ -40,8 +40,8 @@ class App(customtkinter.CTk):
             padx=50,
             pady=(20, 10))
         
-        self.default_var = customtkinter.StringVar(value="off")
-        self.checkbox = customtkinter.CTkCheckBox(
+        self.default_var = StringVar(value="off")
+        self.checkbox = CTkCheckBox(
             self,
             text="Show password",
             command=self.onchange_show,
@@ -56,7 +56,7 @@ class App(customtkinter.CTk):
             pady=(10,20),
             sticky="w")
 
-        self.submit_button = customtkinter.CTkButton(
+        self.submit_button = CTkButton(
             self,
             width=200,
             height=40,
@@ -73,7 +73,7 @@ class App(customtkinter.CTk):
             columnspan=2,
             sticky="w")
         
-        self.panel_button = customtkinter.CTkButton(
+        self.panel_button = CTkButton(
             self,
             width=200,
             height=40,
@@ -90,7 +90,7 @@ class App(customtkinter.CTk):
             columnspan=2,
             sticky="e")
 
-        self.progressbar = customtkinter.CTkProgressBar(
+        self.progressbar = CTkProgressBar(
             self,
             width=500,
             height=5,
@@ -104,7 +104,7 @@ class App(customtkinter.CTk):
         self.progressbar.set(0.1)
         self.progressbar.configure(progress_color="gray")
 
-        self.crack_time_label = customtkinter.CTkLabel(
+        self.crack_time_label = CTkLabel(
             self, text="",
             fg_color="transparent", 
             font=("Helvetica", 20, "bold"))
@@ -175,7 +175,7 @@ class App(customtkinter.CTk):
             self.toplevel_window.focus()
 
     def auth_access(self) -> None:
-        self.dialog = customtkinter.CTkInputDialog(text="Type in password:", title="Authorization")
+        self.dialog = CTkInputDialog(text="Type in password:", title="Authorization")
         user_input = self.dialog.get_input()
         if self.auth_service.verify_password(user_input):
             self.open_panel()

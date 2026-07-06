@@ -39,7 +39,7 @@ class StoredPasswords:
 
     # change to string maybe
     def get_password(self, id) -> list:
-        return [p.encrypted_password for p in self.passwords if id == p.id] 
+        return [p.password for p in self.passwords if id == p.id] 
 
     def set_passwords(self, passwords: list) -> None:
         self.passwords = passwords
@@ -66,7 +66,7 @@ class VaultHandler:
             return
 
         with open(self.filepath, "wb") as file:
-            self._encrypt_file([], self.master_password)
+            self.encrypt_file([], self.master_password)
 
     def _decrypt_file(self) -> list:
         with open(self.filepath, "rb") as file:
@@ -96,7 +96,7 @@ class VaultHandler:
             loaded_passwords.append(obj)
         return loaded_passwords
         
-    def _encrypt_file(self, password_objects: list) -> None:
+    def encrypt_file(self, password_objects: list) -> None:
         salt = token_bytes(16)
         password_bytes = self.master_password.encode("utf-8")
         

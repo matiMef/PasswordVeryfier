@@ -1,34 +1,34 @@
-import customtkinter
+from customtkinter import CTkScrollableFrame, CTkCheckBox, CTkToplevel, CTkProgressBar, CTkLabel, CTkButton
 from Backend.generator import PasswordGenerator
 from Utilities.time import TimeObject
 
-class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
-    def __init__(self, master, title, values):
+class ItemsFrame(CTkScrollableFrame):
+    def __init__(self, master: object, title: str, values: list):
         super().__init__(master, label_text=title)
         self.grid_columnconfigure(0, weight=1)
         self.values = values
         self.checkboxes = []
     
         for i, value in enumerate(self.values):
-            checkbox = customtkinter.CTkCheckBox(
+            checkbox = CTkCheckBox(
                 self, 
                 text=value.name, 
                 text_color="white", 
                 text_color_disabled="gray",
-                command=self.verifyState
-            )
+                command=self.verifyState)
             checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
             self.checkboxes.append(checkbox)
 
         self.update_values(values)
 
-    def update_values(self, new_values: list):
+    def update_values(self, new_values: list) -> None:
         for checkbox in self.checkboxes:
             checkbox.destroy()
         self.checkboxes.clear()
 
         for i, value in enumerate(new_values):
-            checkbox = customtkinter.CTkCheckBox(self,
+            checkbox = CTkCheckBox(
+                self,
                 text=value.id, 
                 text_color="white", 
                 text_color_disabled="gray",
@@ -49,11 +49,13 @@ class ScrollablePasswordFrame(customtkinter.CTkScrollableFrame):
 
     def get(self) -> int | None:
         for checkbox in self.checkboxes:
+            
             if checkbox.get() == 1:
                 return checkbox.database_id
+        
         return None
 
-class GeneratedPasswordPanel(customtkinter.CTkToplevel):
+class GeneratedPasswordPanel(CTkToplevel):
     def __init__(self, master, stored_passwords, on_update_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("500x200")
@@ -66,7 +68,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
         new_password = PasswordGenerator(32)
         self.stored_passwords = stored_passwords
     
-        self.progressbar = customtkinter.CTkProgressBar(
+        self.progressbar = CTkProgressBar(
             self,
             width=500,
             height=5,
@@ -79,7 +81,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
         self.progressbar.set(1)
         self.progressbar.configure(progress_color="green")
 
-        self.label = customtkinter.CTkLabel(
+        self.label = CTkLabel(
             self,
             text=new_password.password,
             font=("Helvetica", 20, "bold"))
@@ -90,7 +92,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
             pady=(10,10)
         )
 
-        self.exit_button = customtkinter.CTkButton(
+        self.exit_button = CTkButton(
             self,
             width=137,
             height=30,
@@ -106,7 +108,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
             pady=(20,10),
             sticky="w")
 
-        self.save_button = customtkinter.CTkButton(
+        self.save_button = CTkButton(
             self,   
             width=137,
             height=30,
@@ -145,7 +147,7 @@ class GeneratedPasswordPanel(customtkinter.CTkToplevel):
         else:
             self.destroy()
    
-class DeletionDialog(customtkinter.CTkToplevel):
+class DeletionDialog(CTkToplevel):
     def __init__(self, stored_passwords, password_id, on_update_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("350x120")
@@ -156,7 +158,7 @@ class DeletionDialog(customtkinter.CTkToplevel):
         self.password_id = password_id
         self.on_update_callback = on_update_callback
 
-        self.label = customtkinter.CTkLabel(
+        self.label = CTkLabel(
             self, 
             text=f"Confirm Deletion",
             font=("Helvetica", 20, "bold"))
@@ -167,7 +169,7 @@ class DeletionDialog(customtkinter.CTkToplevel):
             pady=(20,10),
             columnspan=2)
         
-        self.cancel_button = customtkinter.CTkButton(
+        self.cancel_button = CTkButton(
             self,
             width=137,
             height=30,
@@ -182,7 +184,7 @@ class DeletionDialog(customtkinter.CTkToplevel):
             padx=(0,170),
             pady=(20,10))
         
-        self.delete_button = customtkinter.CTkButton(
+        self.delete_button = CTkButton(
             self,
             width=137,
             height=30,
@@ -197,8 +199,10 @@ class DeletionDialog(customtkinter.CTkToplevel):
             padx=(170,0),
             pady=(20,10))
 
-    def delete_callback(self):
+    def delete_callback(self) -> None:
         self.stored_passwords.delete_password(self.password_id)
+        
         if self.on_update_callback:
             self.on_update_callback()
+        
         self.destroy()
