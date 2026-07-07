@@ -1,4 +1,4 @@
-from math import pow
+from math import exp2, log2, isfinite
 from string import ascii_lowercase, ascii_uppercase, digits, punctuation
 
 class Password:
@@ -32,7 +32,7 @@ class Password:
         if self.is_any_special(): pool_size += 32
         return pool_size
     
-    def _check_password_complexity(self) -> tuple:
+    def _check_password_complexity(self) -> str:
         complexity_map = {
             10: "Weak",
             26: "Weak",
@@ -48,14 +48,25 @@ class Password:
         }
         return complexity_map.get(self.pool_size, "Unknown")
 
-    # To do
     def estimate_crack_time(self, computional_capacity: float = 3e11) -> float:
-        T = pow(self.pool_size, self.length)/computional_capacity
-        return T
+        if self.length <= 0 or self.pool_size <= 0:
+            return float("inf")
+
+        if computional_capacity <= 0:
+            raise ValueError("computional_capacity must be positive")
+
+        entropy_bits = self.length * log2(self.pool_size)
+        return exp2(entropy_bits - log2(computional_capacity))
 
     def map_crack_time(self) -> str | dict: 
         total_time = {"years": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}
-        total_seconds = int(self.estimate_crack_time())
+        estimated_seconds = self.estimate_crack_time()
+
+        if not isfinite(estimated_seconds):
+            total_time.update({"years": float("inf")})
+            return total_time
+
+        total_seconds = int(estimated_seconds)
         
         seconds = total_seconds % 60
         total_minutes = total_seconds // 60

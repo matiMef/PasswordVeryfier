@@ -37,7 +37,6 @@ class StoredPasswords:
     def get_passwords(self) -> list:
         return self.passwords
 
-    # change to string maybe
     def get_password(self, id) -> list:
         return [p.password for p in self.passwords if id == p.id] 
 

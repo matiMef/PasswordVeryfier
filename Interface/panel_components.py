@@ -8,16 +8,6 @@ class ItemsFrame(CTkScrollableFrame):
         self.grid_columnconfigure(0, weight=1)
         self.values = values
         self.checkboxes = []
-    
-        for i, value in enumerate(self.values):
-            checkbox = CTkCheckBox(
-                self, 
-                text=value.name, 
-                text_color="white", 
-                text_color_disabled="gray",
-                command=self.verifyState)
-            checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
-            self.checkboxes.append(checkbox)
 
         self.update_values(values)
 

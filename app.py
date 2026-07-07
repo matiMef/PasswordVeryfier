@@ -147,7 +147,7 @@ class App(CTk):
             self.progressbar.set(1)
             self.progressbar.configure(progress_color="green")
 
-        elif password.complexity in ("Strong" or "Average") and (years > 100):
+        elif password.complexity in ("Strong", "Average") and (years > 100):
             self.progressbar.set(0.8)
             self.progressbar.configure(progress_color="green")
 
