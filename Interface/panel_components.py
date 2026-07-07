@@ -49,6 +49,7 @@ class GeneratedPasswordPanel(CTkToplevel):
     def __init__(self, master, stored_passwords, on_update_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("500x200")
+        self.resizable(False, False)
         self.title("Generator")
         self.grid_columnconfigure(0, weight=1)
         self.lift()
@@ -141,6 +142,7 @@ class DeletionDialog(CTkToplevel):
     def __init__(self, stored_passwords, password_id, on_update_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("350x120")
+        self.resizable(False, False)
         self.title("Confirm")
         self.lift()
         self.grid_columnconfigure(0, weight=1)

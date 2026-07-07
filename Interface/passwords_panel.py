@@ -5,18 +5,18 @@ from Backend.vault import VaultHandler, StoredPasswords
 from Interface.panel_components import ItemsFrame, DeletionDialog, GeneratedPasswordPanel
 
 class PasswordPanel(CTkToplevel): 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, password, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("600x250")
+        self.resizable(False, False)
         self.title("Vault")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.gen_panel = None
         self.confirmation_dialog = None
-
-        # to do path
+    
         current_dir = path.dirname(path.abspath(__file__))
-        self.vault = VaultHandler("vault.json", current_dir, "password")
+        self.vault = VaultHandler("vault.json", current_dir, password)
         self.vault.create_file()
 
         self.stored_passwords = StoredPasswords()
@@ -139,4 +139,4 @@ class PasswordPanel(CTkToplevel):
             password_string = matching_password[0]
         
         copy(password_string)
-        self.after(30000, self.clear)
+        self.after(30000, self.clear())

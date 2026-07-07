@@ -1,4 +1,4 @@
-from customtkinter import CTk, CTkLabel, CTkEntry, CTkCheckBox, CTkButton, StringVar, CTkProgressBar, CTkInputDialog
+from customtkinter import CTk, CTkLabel, CTkEntry, CTkCheckBox, CTkButton, CTkToplevel, StringVar, CTkProgressBar, CTkInputDialog
 from Backend.vault import AuthService
 from Backend.checker import Password
 from Interface.passwords_panel import PasswordPanel
@@ -7,6 +7,7 @@ class App(CTk):
     def __init__(self):
         super().__init__()
         self.geometry("600x400")
+        self.resizable(False, False)
         self.toplevel_window = None
         self.grid_columnconfigure(0, weight=1)
         vpf=(self.register(self._validate_pass_field), "%P")
@@ -168,17 +169,87 @@ class App(CTk):
         self.show_label(password)
         self.update_progressbar(password)
 
-    def open_panel(self) -> None:
+    def open_panel(self, user_input) -> None:
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
-            self.toplevel_window = PasswordPanel()  
+            self.toplevel_window = PasswordPanel(user_input)  
         else:
             self.toplevel_window.focus()
 
     def auth_access(self) -> None:
-        self.dialog = CTkInputDialog(text="Type in password:", title="Authorization")
-        user_input = self.dialog.get_input()
-        if self.auth_service.verify_password(user_input):
-            self.open_panel()
+        dialog = CTkToplevel(self)
+        dialog.title("Authorization")
+        dialog.geometry("360x140")
+        dialog.resizable(False, False)
+        dialog.transient(self)
+        dialog.grab_set()
+
+        entry = CTkEntry(
+            dialog,
+            width=300,
+            placeholder_text="Password",
+            show="*",
+            font=("Helvetica", 16))
+        entry.grid(
+            row=0, 
+            column=0, 
+            columnspan=2, 
+            padx=20, 
+            pady=(20, 6))
+
+        show_var = StringVar(value="off")
+        checkbox = CTkCheckBox(
+            dialog,
+            text="Show password",
+            variable=show_var,
+            onvalue="on",
+            offvalue="off",
+            command=lambda: entry.configure(show="" if show_var.get() == "on" else "*"))
+        checkbox.grid(row=1, 
+                      column=0, 
+                      padx=20, 
+                      pady=(0, 8), 
+                      sticky="w")
+
+        result = {"password": None}
+
+        def on_ok():
+            result["password"] = entry.get()
+            dialog.destroy()
+
+        def on_cancel():
+            dialog.destroy()
+
+        ok_button = CTkButton(
+            dialog, 
+            width=100, 
+            height=30, 
+            text="OK", 
+            command=on_ok)
+        ok_button.grid(
+            row=2, 
+            column=0, 
+            padx=(40, 10), 
+            pady=10, 
+            sticky="e")
+
+        cancel_button = CTkButton(
+            dialog, 
+            width=100, 
+            height=30, 
+            text="Cancel", 
+            command=on_cancel)
+        cancel_button.grid(
+            row=2, 
+            column=1, 
+            padx=(10, 40), 
+            pady=10, 
+            sticky="w")
+
+        self.wait_window(dialog)
+
+        user_input = result["password"]
+        if user_input and self.auth_service.verify_password(user_input):
+            self.open_panel(user_input)
         
 app = App()
 app.mainloop()

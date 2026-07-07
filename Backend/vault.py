@@ -65,15 +65,17 @@ class VaultHandler:
             return
 
         with open(self.filepath, "wb") as file:
-            self.encrypt_file([], self.master_password)
+            self.encrypt_file([])
 
     def _decrypt_file(self) -> list:
+        password = self.master_password 
+
         with open(self.filepath, "rb") as file:
             file_content = file.read()
         
         salt = file_content[:16]
         encrypted_file = file_content[16:]
-        password_bytes = self.master_password.encode("utf-8") 
+        password_bytes = password.encode("utf-8") 
         
         key = pbkdf2_hmac('sha256', password_bytes, salt, 647149)
         key = b64encode(key)
@@ -96,8 +98,10 @@ class VaultHandler:
         return loaded_passwords
         
     def encrypt_file(self, password_objects: list) -> None:
+        password = self.master_password
+
         salt = token_bytes(16)
-        password_bytes = self.master_password.encode("utf-8")
+        password_bytes = password.encode("utf-8")
         
         key = pbkdf2_hmac('sha256', password_bytes, salt, 647149)
         key = b64encode(key)
