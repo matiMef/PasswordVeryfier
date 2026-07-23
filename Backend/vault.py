@@ -4,18 +4,29 @@ from json import loads, dumps
 from secrets import token_bytes
 from hashlib import pbkdf2_hmac, sha256
 from cryptography.fernet import Fernet, InvalidToken
+from pathlib import Path
 
 class AuthService:
     def __init__(self):
-        # to do
-        self.stored_hash="5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8"
+        self.current_file = Path(__file__).resolve()
+        self.current_dir = self.current_file.parent
+        self.filepath  = self.current_dir.parent / "Interface"
 
     def verify_password(self, plain_password: str) -> bool:
-        if not plain_password:
+        handler = VaultHandler("vault.json", self.filepath, plain_password)
+        print(self.filepath)
+    
+        if handler.check_file():
+            if not plain_password:
+                return False
+            
+        try:
+            return handler.check_password()
+        except ValueError:
             return False
         
-        input_hash = sha256(plain_password.encode('utf-8')).hexdigest()
-        return input_hash == self.stored_hash
+        else:
+            handler.create_password()
 
 class JsonPassword:
     def __init__(self, id: int, name: str, password: str):
@@ -56,9 +67,12 @@ class VaultHandler:
         self.filename = name
         self.filepath = path.join(raw_path, name)
         self.master_password = password
-        
+    
     def check_file(self) -> bool:
         return path.exists(self.filepath)
+
+    def create_password(self) -> None:
+        pass
 
     def create_file(self) -> None:
         if self.check_file():
@@ -87,6 +101,28 @@ class VaultHandler:
         
         except InvalidToken:
             raise ValueError("Wrong master password")
+        
+    def check_password(self) -> bool:
+        password = self.master_password 
+
+        with open(self.filepath, "rb") as file:
+            file_content = file.read()
+        
+        salt = file_content[:16]
+        encrypted_file = file_content[16:]
+        password_bytes = password.encode("utf-8") 
+        
+        key = pbkdf2_hmac('sha256', password_bytes, salt, 647149)
+        key = b64encode(key)
+        f = Fernet(key)
+        
+        try:
+            decrypted_file = f.decrypt(encrypted_file)
+            return True
+        
+        except InvalidToken:
+            raise ValueError("Wrong master password")
+            return False
         
     def decrypt_and_load(self) -> list:
         loaded_passwords = []

@@ -123,8 +123,8 @@ class PasswordPanel(CTkToplevel):
             self.confirmation_dialog.focus()
 
     def clear(self):
-        copy(' ')
-        self.destroy
+        copy('')
+        self.destroy()
 
     def copy_callback(self):
         selected_id = self.items_frame.get()
@@ -132,11 +132,9 @@ class PasswordPanel(CTkToplevel):
         if selected_id is None:
             return
 
-        copy_id = self.items_frame.get()
-        matching_password = self.stored_passwords.get_password(copy_id)
+        matching_password = self.stored_passwords.get_password(selected_id)
 
         if matching_password:
             password_string = matching_password[0]
-        
-        copy(password_string)
-        self.after(30000, self.clear())
+            copy(password_string)
+            self.after(30000, self.clear)
