@@ -6,7 +6,7 @@ from Interface.passwords_panel import PasswordPanel
 class App(CTk):
     def __init__(self):
         super().__init__()
-        self.geometry("600x400")
+        self.geometry("600x350")
         self.resizable(False, False)
         self.toplevel_window = None
         self.grid_columnconfigure(0, weight=1)
@@ -181,6 +181,7 @@ class App(CTk):
         dialog.geometry("360x140")
         dialog.resizable(False, False)
         dialog.transient(self)
+        dialog.wait_visibility()
         dialog.grab_set()
 
         entry = CTkEntry(

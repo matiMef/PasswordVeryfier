@@ -12,20 +12,32 @@ class ItemsFrame(CTkScrollableFrame):
         self.update_values(values)
 
     def update_values(self, new_values: list) -> None:
-        for checkbox in self.checkboxes:
-            checkbox.destroy()
-        self.checkboxes.clear()
+        target_count = len(new_values)
+
+        for checkbox in self.checkboxes[target_count:]:
+            checkbox.grid_remove()
+
+        self.checkboxes = self.checkboxes[:target_count]
 
         for i, value in enumerate(new_values):
-            checkbox = CTkCheckBox(
-                self,
-                text=value.id, 
-                text_color="white", 
-                text_color_disabled="gray",
-                command=self.verifyState)
+            if i < len(self.checkboxes):
+                checkbox = self.checkboxes[i]
+                checkbox.configure(text=value.id)
+                checkbox.configure(state="normal")
+                checkbox.deselect()
+            else:
+                checkbox = CTkCheckBox(
+                    self,
+                    text=value.id,
+                    text_color="white",
+                    text_color_disabled="gray",
+                    command=self.verifyState)
+                self.checkboxes.append(checkbox)
+
             checkbox.database_id = value.id
             checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
-            self.checkboxes.append(checkbox)
+
+        self.verifyState()
 
     def verifyState(self):
         any_checked = any(cb.get() for cb in self.checkboxes)
