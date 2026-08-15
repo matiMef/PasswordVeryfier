@@ -5,8 +5,8 @@ from Backend.vault import VaultHandler, StoredPasswords
 from Interface.panel_components import ItemsFrame, DeletionDialog, GeneratedPasswordPanel
 
 class PasswordPanel(CTkToplevel): 
-    def __init__(self, password, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, master=None, password=None, **kwargs):
+        super().__init__(master=master, **kwargs)
         self.geometry("600x250")
         self.resizable(False, False)
         self.title("Vault")

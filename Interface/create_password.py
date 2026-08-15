@@ -1,6 +1,5 @@
 from os import path
 
-from pyperclip import copy
 from customtkinter import (
     CTkToplevel,
     CTkButton,
@@ -11,15 +10,14 @@ from customtkinter import (
 
 from Backend.vault import VaultHandler
 
-
 class CreatePasswordPanel(CTkToplevel):
     def __init__(self, master=None, **kwargs):
         super().__init__(master=master, **kwargs)
-        self.geometry("400x250")
-        self.resizable(False, False)
+        self.geometry("350x250")
         self.title("Create Password Panel")
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
+        self.resizable(False, False)
 
         self.current_dir = path.dirname(path.abspath(__file__))
 
@@ -57,7 +55,7 @@ class CreatePasswordPanel(CTkToplevel):
         )
         self.create_password_button.grid(row=3, column=0, padx=10, pady=10, sticky="w")
 
-        self.copy_button = CTkButton(
+        self.exit_button = CTkButton(
             self,
             width=137,
             height=30,
@@ -65,9 +63,9 @@ class CreatePasswordPanel(CTkToplevel):
             font=("Helvetica", 16, "bold"),
             fg_color="#1391E0",
             hover_color="#104483",
-            command=self.copy_callback,
+            command=self.exit_callback,
         )
-        self.copy_button.grid(row=3, column=0, padx=157, pady=10, sticky="w")
+        self.exit_button.grid(row=3, column=0, padx=157, pady=10, sticky="w")
 
 
     def onchange_show(self) -> None:
@@ -78,11 +76,6 @@ class CreatePasswordPanel(CTkToplevel):
 
     def gen_callback(self) -> None:
         self.accept_new_password(self.checker_field.get())
-
-    def copy_callback(self) -> None:
-        password = self.checker_field.get()
-        if password:
-            copy(password)
 
     def accept_new_password(self, password) -> None:
         self.password = password
