@@ -1,7 +1,8 @@
 from customtkinter import CTk, CTkLabel, CTkEntry, CTkCheckBox, CTkButton, CTkToplevel, StringVar, CTkProgressBar, CTkInputDialog
-from Backend.vault import AuthService
+from Backend.vault import AuthService, VaultHandler
 from Backend.checker import Password
 from Interface.passwords_panel import PasswordPanel
+from pathlib import Path
 
 class App(CTk):
     def __init__(self):
@@ -11,6 +12,10 @@ class App(CTk):
         self.toplevel_window = None
         self.grid_columnconfigure(0, weight=1)
         vpf=(self.register(self._validate_pass_field), "%P")
+        self.current_file = Path(__file__).resolve()
+        self.current_dir = self.current_file.parent
+        self.filepath = self.current_dir / "Interface"
+        self.create_panel = None
 
         self.auth_service = AuthService()
 
@@ -81,7 +86,7 @@ class App(CTk):
             text="Saved passwords",
             fg_color="#1BD625",
             hover_color="#11841D",
-            command=self.auth_access,
+            command=self._verify_file,
             font=("Helvetica", 16, "bold"))
         self.panel_button.grid(
             row=4,
@@ -175,6 +180,15 @@ class App(CTk):
         else:
             self.toplevel_window.focus()
 
+    def _verify_file(self) -> None:
+        handler = VaultHandler("vault.json", self.filepath)
+
+        if not handler.check_file():
+            self.create_password_event(self)
+            return
+
+        self.auth_access()
+    
     def auth_access(self) -> None:
         dialog = CTkToplevel(self)
         dialog.title("Authorization")
@@ -251,6 +265,16 @@ class App(CTk):
         user_input = result["password"]
         if user_input and self.auth_service.verify_password(user_input):
             self.open_panel(user_input)
+
+    def create_password_event(self, parent):
+        from Interface.create_password import CreatePasswordPanel
+
+        if self.create_panel is None or not self.create_panel.winfo_exists():
+            self.create_panel = CreatePasswordPanel(master=parent)
+            self.create_panel.focus()
+            self.wait_window(self.create_panel)
+        else:
+            self.create_panel.focus()
         
 app = App()
 app.mainloop()

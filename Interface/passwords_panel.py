@@ -122,6 +122,13 @@ class PasswordPanel(CTkToplevel):
         else:
             self.confirmation_dialog.focus()
 
+    def onchange_show(self) -> None:
+        self.checkbox_state = self.checkbox.get()
+        if self.checkbox_state == "on":
+            self.checker_field.configure(show="")
+        else:
+            self.checker_field.configure(show="*")
+
     def clear(self):
         copy('')
         self.destroy()
