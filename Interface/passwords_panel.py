@@ -78,6 +78,18 @@ class PasswordsPanel(CTkToplevel):
             hover_color="#111111",
             command=self.destroy)
         self.exit_button.grid(row=3, column=0, padx=10, pady=10, sticky="e")
+
+        self._verify_is_any_checked()
+
+    def _verify_is_any_checked(self) -> bool:
+        if self.items_frame.check_state():
+            self.del_button.configure(state="normal")
+            self.copy_button.configure(state="normal")
+            self.after(100, self._verify_is_any_checked)
+            return
+        self.del_button.configure(state="disabled")
+        self.copy_button.configure(state="disabled")
+        self.after(100, self._verify_is_any_checked)
             
     def _update_vault(self) -> None:
         try:
@@ -85,7 +97,7 @@ class PasswordsPanel(CTkToplevel):
             self.items_frame.update_values(self.passwords_list)
             self.vault.encrypt_file(self.passwords_list)
         except Exception as e:
-            raise e
+            raise ValueError(f"{e}")
         
     def _generate_password_callback(self) -> None:
         if self.generate_password_panel is None or not self.generate_password_panel.winfo_exists():

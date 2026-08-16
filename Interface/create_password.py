@@ -72,7 +72,7 @@ class CreatePasswordPanel(CTkToplevel):
         try:
             self._accept_new_password(self.new_password_field.get())
         except Exception as e:
-            raise e
+            raise ValueError(f"{e}")
 
     def _accept_new_password(self, password) -> None:
         self.password = password

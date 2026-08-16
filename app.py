@@ -116,8 +116,26 @@ class App(CTk):
 
         self._auth_access_event()
 
+    def _empty_password_notification(self):
+        self.password_checker_field.configure(
+            border_color="#ff4d4d",
+            border_width=2)
+        self.password_checker_field.focus_set()
+
+    def _ok_notification(self):
+        self.password_checker_field.configure(
+            border_color="gray",
+            border_width=1)
+        self.password_checker_field.focus_set()
+
     def _on_submit(self) -> None:
         password = Password(self.password_checker_field.get())
+
+        if password.password is None or password.password == "":
+            self._empty_password_notification()
+            raise ValueError("Password cannot be empty")
+        self._ok_notification()
+
         self.show_label(password)
         self.update_progressbar(password)
 
@@ -179,78 +197,101 @@ class App(CTk):
             raise e
 
     def _auth_access_event(self) -> None:
+        dialog = CTkToplevel(self)
+        dialog.title("Authorization")
+        dialog.wait_visibility()
+        dialog.geometry("400x200")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        dialog.transient(self)
+        self.lift()
+
+        auth_service = AuthService()
+
+        entry = CTkEntry(
+            dialog,
+            width=300,
+            height=40,
+            placeholder_text="Password",
+            show="*",
+            font=("Helvetica", 18, "bold"))
+        entry.grid(row=0, column=0, padx=50, pady=(20, 10))
+
+        show_var = StringVar(value="off")
+        checkbox = CTkCheckBox(
+            dialog,
+            text="Show password",
+            variable=show_var,
+            onvalue="on",
+            offvalue="off",
+            fg_color="#111111",
+            hover_color="#111111",
+            command=lambda: entry.configure(show="" if show_var.get() == "on" else "*"))
+        checkbox.grid(row=1, column=0, padx=50, pady=(10, 20), sticky="w")
+
+        result = {"password": None}
+
+        def _wrong_password_notification():
+            entry.configure(
+                border_color="#ff4d4d",
+                border_width=2,
+            )
+            entry.focus_set()
+
+        def _empty_password_notification():
+            entry.configure(
+                border_color="#ff4d4d",
+                border_width=2,
+            )
+            entry.focus_set()
+
+        def on_ok():
+            result["password"] = entry.get()
+
+            if result["password"] is None or result["password"] == "":
+                _empty_password_notification()
+                return
+
+            if auth_service.verify_password(result["password"]) is False:
+                _wrong_password_notification()
+                return
+
+            dialog.destroy()
+
+        def on_cancel():
+            dialog.destroy()
+
+        cancel_button = CTkButton(
+            dialog, 
+            width=100, 
+            height=30,
+            fg_color="#606363",
+            hover_color="#111111",
+            text="Cancel",
+            font=("Helvetica", 16, "bold"),
+            command=on_cancel)
+        cancel_button.grid(row=2, column=0, padx=50, pady=10, sticky="w")
+
+        ok_button = CTkButton(
+            dialog, 
+            width=100, 
+            height=30,
+            fg_color="#606363",
+            hover_color="#111111",            
+            font=("Helvetica", 16, "bold"),
+            text="OK", 
+            command=on_ok)
+        ok_button.grid(row=2, column=0, padx=(0,50), pady=10, sticky="e")
+
+        self.wait_window(dialog)
+
         try:
-            dialog = CTkToplevel(self)
-            dialog.title("Authorization")
-            dialog.wait_visibility()
-            dialog.geometry("400x200")
-            dialog.resizable(False, False)
-            dialog.grab_set()
-            dialog.transient(self)
-            self.lift()
-
-            self.password = None
-            auth_service = AuthService()
-
-            entry = CTkEntry(
-                dialog,
-                width=300,
-                height=40,
-                placeholder_text="Password",
-                show="*",
-                font=("Helvetica", 18, "bold"))
-            entry.grid(row=0, column=0, padx=50, pady=(20, 10))
-
-            show_var = StringVar(value="off")
-            checkbox = CTkCheckBox(
-                dialog,
-                text="Show password",
-                variable=show_var,
-                onvalue="on",
-                offvalue="off",
-                fg_color="#111111",
-                hover_color="#111111",
-                command=lambda: entry.configure(show="" if show_var.get() == "on" else "*"))
-            checkbox.grid(row=1, column=0, padx=50, pady=(10, 20), sticky="w")
-
-            result = {"password": None}
-
-            def on_ok():
-                result["password"] = entry.get()
-                dialog.destroy()
-
-            def on_cancel():
-                dialog.destroy()
-
-            cancel_button = CTkButton(
-                dialog, 
-                width=100, 
-                height=30,
-                fg_color="#606363",
-                hover_color="#111111",
-                text="Cancel",
-                font=("Helvetica", 16, "bold"),
-                command=on_cancel)
-            cancel_button.grid(row=2, column=0, padx=50, pady=10, sticky="w")
-
-            ok_button = CTkButton(
-                dialog, 
-                width=100, 
-                height=30,
-                fg_color="#606363",
-                hover_color="#111111",            
-                font=("Helvetica", 16, "bold"),
-                text="OK", 
-                command=on_ok)
-            ok_button.grid(row=2, column=0, padx=(0,50), pady=10, sticky="e")
-
-            self.wait_window(dialog)
-
             user_input = result["password"]
             if user_input and auth_service.verify_password(user_input):
                 self._password_panel_event(user_input)
+ 
         except Exception as e:
-            raise e
+            print("Authentication error")
         
 app = App()
 app.mainloop()

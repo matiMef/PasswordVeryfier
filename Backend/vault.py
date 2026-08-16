@@ -129,7 +129,7 @@ class VaultHandler:
                 loaded_passwords.append(obj)
             return loaded_passwords
         except Exception as e:
-            raise e
+            raise ValueError(f"{e}")
 
     def encrypt_file(self, password_objects: list) -> None:
         try:
@@ -153,4 +153,4 @@ class VaultHandler:
                 file.write(salt)
                 file.write(token)
         except Exception as e:
-            raise e
+            raise ValueError(f"{e}")

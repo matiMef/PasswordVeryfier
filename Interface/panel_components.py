@@ -1,4 +1,4 @@
-from customtkinter import CTkScrollableFrame, CTkCheckBox, CTkToplevel, CTkProgressBar, CTkLabel, CTkButton
+from customtkinter import CTkScrollableFrame, CTkCheckBox, CTkToplevel, CTkProgressBar, CTkLabel, CTkButton, CTkEntry
 from Backend.generator import PasswordGenerator
 from Utilities.time import TimeObject
 
@@ -22,13 +22,13 @@ class ItemsFrame(CTkScrollableFrame):
         for i, value in enumerate(new_values):
             if i < len(self.checkboxes):
                 checkbox = self.checkboxes[i]
-                checkbox.configure(text=value.id)
+                checkbox.configure(text=value.name)
                 checkbox.configure(state="normal")
                 checkbox.deselect()
             else:
                 checkbox = CTkCheckBox(
                     self,
-                    text=value.id,
+                    text=value.name,
                     text_color="white",
                     text_color_disabled="gray",
                     fg_color="#111111",
@@ -41,6 +41,12 @@ class ItemsFrame(CTkScrollableFrame):
             checkbox.grid(row=i, column=0, padx=10, pady=(10, 0), sticky="w")
 
         self._verifyState()
+
+    def check_state(self) -> bool:
+        any_checked = any(cb.get() for cb in self.checkboxes)
+        if any_checked:
+            return True
+        return False
 
     def _verifyState(self) -> None:
         any_checked = any(cb.get() for cb in self.checkboxes)
@@ -117,11 +123,14 @@ class GeneratePasswordPanel(CTkToplevel):
         self._update_timebar()
 
     def _save_password_callback(self) -> str:
-        new_password = self.label.cget("text")
-        self.stored_passwords.add_password("test", new_password)
-        if self.on_update_callback:
-            self.on_update_callback()
-        self.destroy()
+        try:
+            new_password = self.label.cget("text")
+            self._create_password_name(new_password)
+            if self.on_update_callback:
+                self.on_update_callback()
+            self.destroy()
+        except Exception as e:
+            raise ValueError(f"{e}")
         
     def _update_timebar(self) -> None:
         if self.time.is_elapsed() != True:
@@ -136,6 +145,80 @@ class GeneratePasswordPanel(CTkToplevel):
             self.after(1000, self._update_timebar)
         else:
             self.destroy()
+
+    def _create_password_name(self, password: str) -> None:
+        dialog = CTkToplevel(self)
+        dialog.title("Configure password")
+        dialog.wait_visibility()
+        dialog.geometry("400x150")
+        dialog.resizable(False, False)
+        dialog.grab_set()
+        dialog.transient(self)
+        self.lift()
+
+        entry = CTkEntry(
+            dialog,
+            width=300,
+            height=40,
+            placeholder_text="Name",
+            show="*",
+            font=("Helvetica", 18, "bold"))
+        entry.grid(row=0, column=0, padx=50, pady=(20, 10))
+
+        result = {"name": None}
+
+        def _empty_name_notification():
+            entry.configure(
+                border_color="#ff4d4d",
+                border_width=2,
+            )
+            entry.focus_set()
+
+        def on_ok():
+            result["name"] = entry.get()
+
+            if result["name"] is None or result["name"] == "":
+                _empty_name_notification()
+                return
+
+            dialog.destroy()
+
+        def on_cancel():
+            dialog.destroy()
+
+        cancel_button = CTkButton(
+            dialog, 
+            width=100, 
+            height=30,
+            fg_color="#606363",
+            hover_color="#111111",
+            text="Cancel",
+            font=("Helvetica", 16, "bold"),
+            command=on_cancel)
+        cancel_button.grid(row=2, column=0, padx=50, pady=10, sticky="w")
+
+        ok_button = CTkButton(
+            dialog, 
+            width=100, 
+            height=30,
+            fg_color="#606363",
+            hover_color="#111111",            
+            font=("Helvetica", 16, "bold"),
+            text="OK", 
+            command=on_ok)
+        ok_button.grid(row=2, column=0, padx=(0,50), pady=10, sticky="e")
+
+        self.wait_window(dialog)
+
+        try:
+            user_input = result["name"]
+            if user_input is None or user_input == "":
+                raise ValueError("Name cannot be empty")
+
+            self.stored_passwords.add_password(user_input, password)
+        except Exception as e:
+            raise ValueError(f"{e}")
+        
    
 class DeletePasswordDialog(CTkToplevel):
     def __init__(self, stored_passwords, password_id, on_update_callback, *args, **kwargs):
@@ -147,7 +230,7 @@ class DeletePasswordDialog(CTkToplevel):
         
         self.title("Delete password")
         self.wait_visibility()
-        self.geometry("400x150")
+        self.geometry("350x150")
         self.resizable(False, False)
         self.grid_columnconfigure(0, weight=1)
         self.grab_set()
@@ -186,6 +269,9 @@ class DeletePasswordDialog(CTkToplevel):
         self.delete_password_button.grid(row=1, column=0, padx=(0, 50), pady=(20,10), sticky="e")
 
     def _delete_password_callback(self) -> None:
+        if self.password_id is None or self.password_id == "":
+            raise ValueError("Password cannot be empty")
+
         self.stored_passwords.delete_password(self.password_id)
         
         if self.on_update_callback:
