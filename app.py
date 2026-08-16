@@ -1,7 +1,7 @@
 from customtkinter import CTk, CTkLabel, CTkEntry, CTkCheckBox, CTkButton, StringVar, CTkProgressBar, CTkToplevel
 from Backend.vault import AuthService, VaultHandler
 from Backend.checker import Password
-from Interface.passwords_panel import PasswordPanel
+from Interface.passwords_panel import PasswordsPanel
 from Interface.create_password import CreatePasswordPanel
 from pathlib import Path
 
@@ -35,7 +35,7 @@ class App(CTk):
             placeholder_text="Password",
             validate="key",
             validatecommand=vpf,
-            font=("Helvetica", 16), 
+            font=("Helvetica", 16, "bold"), 
             show="*")
         self.password_checker_field.grid(row=1, column=0, padx=50, pady=(20, 10))
         
@@ -159,7 +159,7 @@ class App(CTk):
     def _password_panel_event(self, plain_password: str) -> None:
         try:
             if self.password_panel is None or not self.password_panel .winfo_exists():
-                self.password_panel  = PasswordPanel(password=plain_password, master=self)
+                self.password_panel  = PasswordsPanel(password=plain_password, master=self)
                 self.wait_visibility()
                 self.wait_window(self.password_panel)
             else:

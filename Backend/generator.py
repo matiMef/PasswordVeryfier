@@ -7,5 +7,8 @@ class PasswordGenerator:
         self.password = self._generate_password()
 
     def _generate_password(self) -> str:
+        if self.length <= 0:
+            self.length = 32
+
         alphabet = ascii_letters + digits + punctuation
         return ''.join(choice(alphabet) for i in range(self.length))

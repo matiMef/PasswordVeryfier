@@ -117,34 +117,40 @@ class VaultHandler:
             return False
 
     def decrypt_and_load(self) -> list:
-        if not self.master_password:
-            raise ValueError("Password cannot be empty")
-        
-        loaded_passwords = []
-        raw_data = self._decrypt_file()
+        try:
+            if not self.master_password:
+                raise ValueError("Password cannot be empty")
+            
+            loaded_passwords = []
+            raw_data = self._decrypt_file()
 
-        for item in raw_data:
-            obj = JsonPassword(item["id"], item["name"], item["password"])
-            loaded_passwords.append(obj)
-        return loaded_passwords
+            for item in raw_data:
+                obj = JsonPassword(item["id"], item["name"], item["password"])
+                loaded_passwords.append(obj)
+            return loaded_passwords
+        except Exception as e:
+            raise e
 
     def encrypt_file(self, password_objects: list) -> None:
-        if not self.master_password:
-            raise ValueError("Password cannot be empty")
-        
-        password = self.master_password
+        try:
+            if not self.master_password:
+                raise ValueError("Password cannot be empty")
+            
+            password = self.master_password
 
-        salt = token_bytes(16)
-        password_bytes = password.encode("utf-8")
+            salt = token_bytes(16)
+            password_bytes = password.encode("utf-8")
 
-        key = pbkdf2_hmac("sha256", password_bytes, salt, 647149)
-        f = Fernet(b64encode(key))
+            key = pbkdf2_hmac("sha256", password_bytes, salt, 647149)
+            f = Fernet(b64encode(key))
 
-        serializable_data = [p.to_dict() for p in password_objects]
-        encoded_file = dumps(serializable_data)
-        token = f.encrypt(encoded_file.encode("utf-8"))
+            serializable_data = [p.to_dict() for p in password_objects]
+            encoded_file = dumps(serializable_data)
+            token = f.encrypt(encoded_file.encode("utf-8"))
 
-        self.filepath.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.filepath, "wb") as file:
-            file.write(salt)
-            file.write(token)
+            self.filepath.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.filepath, "wb") as file:
+                file.write(salt)
+                file.write(token)
+        except Exception as e:
+            raise e

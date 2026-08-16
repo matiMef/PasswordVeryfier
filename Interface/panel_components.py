@@ -4,7 +4,7 @@ from Utilities.time import TimeObject
 
 class ItemsFrame(CTkScrollableFrame):
     def __init__(self, master: object, title: str, values: list):
-        super().__init__(master, label_text=title)
+        super().__init__(master, label_text=title, label_font=("Helvetica", 20, "bold"))
         self.grid_columnconfigure(0, weight=1)
         self.values = values
         self.checkboxes = []
@@ -31,7 +31,10 @@ class ItemsFrame(CTkScrollableFrame):
                     text=value.id,
                     text_color="white",
                     text_color_disabled="gray",
-                    command=self._verifyState)
+                    fg_color="#111111",
+                    hover_color="#111111",
+                    command=self._verifyState,
+                    font=("Helvetica", 20, "bold"))
                 self.checkboxes.append(checkbox)
 
             checkbox.database_id = value.id
@@ -62,7 +65,7 @@ class GeneratePasswordPanel(CTkToplevel):
         super().__init__(*args, **kwargs)
         self.title("Generate password")
         self.wait_visibility()
-        self.geometry("500x200")
+        self.geometry("500x150")
         self.resizable(False, False)
         self.grid_columnconfigure(0, weight=1)
         self.grab_set()
@@ -138,7 +141,7 @@ class DeletePasswordDialog(CTkToplevel):
     def __init__(self, stored_passwords, password_id, on_update_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if password_id is None or password_id is "":
+        if password_id is None or password_id == "":
             self.destroy()
             raise ValueError("Password ID cannot be None")
         

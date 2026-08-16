@@ -48,15 +48,15 @@ class Password:
         }
         return complexity_map.get(self.pool_size, "Unknown")
 
-    def estimate_crack_time(self, computional_capacity: float = 3e11) -> float:
+    def estimate_crack_time(self, computational_capacity: float = 3e11) -> float:
         if self.length <= 0 or self.pool_size <= 0:
             return float("inf")
 
-        if computional_capacity <= 0:
-            raise ValueError("computional_capacity must be positive")
+        if computational_capacity <= 0:
+            raise ValueError("computational_capacity must be positive")
 
         entropy_bits = self.length * log2(self.pool_size)
-        return exp2(entropy_bits - log2(computional_capacity))
+        return exp2(entropy_bits - log2(computational_capacity))
 
     def map_crack_time(self) -> str | dict: 
         total_time = {"years": 0, "days": 0, "hours": 0, "minutes": 0, "seconds": 0}

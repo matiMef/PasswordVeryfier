@@ -10,8 +10,4 @@ class TimeObject:
         return int(current_time - self.start)
 
     def is_elapsed(self) -> bool:
-        current_time = time()
-        if self.start + self.duration - current_time <= 0:
-            return True
-        else:
-            return False
+        return time() >= self.start + self.duration
