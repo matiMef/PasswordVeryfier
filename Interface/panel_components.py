@@ -161,7 +161,6 @@ class GeneratePasswordPanel(CTkToplevel):
             width=300,
             height=40,
             placeholder_text="Name",
-            show="*",
             font=("Helvetica", 18, "bold"))
         entry.grid(row=0, column=0, padx=50, pady=(20, 10))
 
