@@ -2,7 +2,7 @@ from os import path
 from pyperclip import copy
 from customtkinter import CTkToplevel, CTkButton
 from Backend.vault import VaultHandler, StoredPasswords
-from Interface.panel_components import ItemsFrame, DeletionDialog, GeneratedPasswordPanel
+from Interface.panel_components import ItemsFrame, DeletePasswordDialog, GeneratePasswordPanel
 
 class PasswordPanel(CTkToplevel): 
     def __init__(self, master=None, password=None, **kwargs):
@@ -27,12 +27,7 @@ class PasswordPanel(CTkToplevel):
             self, 
             title="Saved passwords", 
             values=self.passwords_list)
-        self.items_frame.grid(
-            row=0, 
-            column=0, 
-            padx=10, 
-            pady=(10, 0), 
-            sticky="nsew")
+        self.items_frame.grid(row=0, column=0, padx=10, pady=(10, 0), sticky="nsew")
 
         self.gen_button = CTkButton(
             self,
@@ -43,12 +38,7 @@ class PasswordPanel(CTkToplevel):
             fg_color="#1BD625",
             hover_color="#11841D",
             command=self.gen_callback)
-        self.gen_button.grid(
-            row=3, 
-            column=0, 
-            padx=10, 
-            pady=10, 
-            sticky="w")
+        self.gen_button.grid(row=3, column=0, padx=10, pady=10, sticky="w")
 
         self.copy_button = CTkButton(
             self,
@@ -59,12 +49,7 @@ class PasswordPanel(CTkToplevel):
             fg_color="#1391E0",
             hover_color="#104483",
             command=self.copy_callback)
-        self.copy_button.grid(
-            row=3, 
-            column=0, 
-            padx=157,
-            pady=10, 
-            sticky="w")
+        self.copy_button.grid(row=3, column=0, padx=157, pady=10, sticky="w")
 
         self.del_button = CTkButton(
             self,
@@ -75,12 +60,7 @@ class PasswordPanel(CTkToplevel):
             fg_color="#E03913",
             hover_color="#831010",
             command=self.del_callback)
-        self.del_button.grid(
-            row=3, 
-            column=0, 
-            padx=157, 
-            pady=10, 
-            sticky="e")
+        self.del_button.grid(row=3, column=0, padx=157, pady=10, sticky="e")
         
         self.exit_button = CTkButton(
             self,
@@ -91,12 +71,7 @@ class PasswordPanel(CTkToplevel):
             fg_color="#C8C511",
             hover_color="#7F8310",
             command=self.destroy)
-        self.exit_button.grid(
-            row=3, 
-            column=0, 
-            padx=10, 
-            pady=10, 
-            sticky="e")
+        self.exit_button.grid(row=3, column=0, padx=10, pady=10, sticky="e")
             
     def update_vault(self) -> None:
         self.passwords_list = self.stored_passwords.get_passwords()
@@ -105,8 +80,7 @@ class PasswordPanel(CTkToplevel):
         
     def gen_callback(self) -> None:
         if self.gen_panel is None or not self.gen_panel.winfo_exists():
-            self.gen_panel = GeneratedPasswordPanel(
-                self, 
+            self.gen_panel = GeneratePasswordPanel(
                 stored_passwords = self.stored_passwords, 
                 on_update_callback = self.update_vault)
         else:
@@ -115,7 +89,7 @@ class PasswordPanel(CTkToplevel):
     def del_callback(self) -> None:
         if self.confirmation_dialog is None or not self.confirmation_dialog.winfo_exists():
             deletion_id = self.items_frame.get()
-            self.confirmation_dialog = DeletionDialog(
+            self.confirmation_dialog = DeletePasswordDialog(
                 stored_passwords = self.stored_passwords, 
                 password_id = deletion_id, 
                 on_update_callback = self.update_vault)

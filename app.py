@@ -8,6 +8,7 @@ from pathlib import Path
 class App(CTk):
     def __init__(self):
         super().__init__()
+        self.title("Password Vault and Veryfier")
         self.geometry("600x350")
         self.resizable(False, False)
         self.grid_columnconfigure(0, weight=1)
@@ -19,8 +20,6 @@ class App(CTk):
         self.create_panel = None
         self.auth_access_panel = None
         self.password_panel = None
-
-        self.auth_service = AuthService()
 
         self.app_title_field = CTkLabel(
             self,
@@ -40,17 +39,17 @@ class App(CTk):
             show="*")
         self.password_checker_field.grid(row=1, column=0, padx=50, pady=(20, 10))
         
-        self.default_var = StringVar(value="off")
+        self.show_var = StringVar(value="off")
         self.checkbox = CTkCheckBox(
             self,
             text="Show password",
-            command=self.onchange_show,
-            variable=self.default_var,
+            variable=self.show_var,
             font=("Helvetica", 14, "bold"), 
             fg_color="#111111",
             hover_color="#111111",
             onvalue="on",
-            offvalue="off")
+            offvalue="off",
+            command=lambda: self.password_checker_field.configure(show="" if self.show_var.get() == "on" else "*"))
         self.checkbox.grid(row=2, column=0, padx=50, pady=(10,20), sticky="w")
 
         self.check_password_button = CTkButton(
@@ -60,8 +59,8 @@ class App(CTk):
             text="Check password",
             fg_color="#606363",
             hover_color="#111111",
-            command=self.on_submit,
-            font=("Helvetica", 16, "bold"))
+            font=("Helvetica", 16, "bold"),
+            command=self._on_submit)
         self.check_password_button.grid(row=4, column=0, padx=50, pady=(10,20), columnspan=2, sticky="w")
         
         self.open_password_panel_button = CTkButton(
@@ -112,67 +111,63 @@ class App(CTk):
         handler = VaultHandler("vault.json", self.filepath)
 
         if not handler.check_file():
-            self.create_password_event()
+            self._create_password_event()
             return
 
-        self.auth_access_event()
+        self._auth_access_event()
 
-    def onchange_show(self) -> None:
-        self.checkbox_state = self.checkbox.get()
-        if self.checkbox_state == "on":
-            self.password_checker_field.configure(show="")
-        else:
-            self.password_checker_field.configure(show="*")
+    def _on_submit(self) -> None:
+        password = Password(self.password_checker_field.get())
+        self.show_label(password)
+        self.update_progressbar(password)
 
     def show_label(self, password: str) -> None:
         crack_time = password.crack_time
         self.crack_time_label.configure(text=f"Estimated time to crack: {crack_time}")
 
     def update_progressbar(self, password: str) -> None:
-        crack_time_dict = password.map_crack_time()
-        years, days = crack_time_dict["years"], crack_time_dict["days"]
+        try:
+            crack_time_dict = password.map_crack_time()
+            years, days = crack_time_dict["years"], crack_time_dict["days"]
 
-        if password.length < 8:
-            self.password_strength_bar.set(0.1)
-            self.password_strength_bar.configure(progress_color="red")
+            if password.length < 8:
+                self.password_strength_bar.set(0.1)
+                self.password_strength_bar.configure(progress_color="red")
 
-        elif password.complexity in ("Strong+", "Strong") and years > 10_000:
-            self.password_strength_bar.set(1)
-            self.password_strength_bar.configure(progress_color="green")
+            elif password.complexity in ("Strong+", "Strong") and years > 10_000:
+                self.password_strength_bar.set(1)
+                self.password_strength_bar.configure(progress_color="green")
 
-        elif password.complexity in ("Strong", "Average") and (years > 100):
-            self.password_strength_bar.set(0.8)
-            self.password_strength_bar.configure(progress_color="green")
+            elif password.complexity in ("Strong", "Average") and (years > 100):
+                self.password_strength_bar.set(0.8)
+                self.password_strength_bar.configure(progress_color="green")
 
-        elif password.complexity == "Average" and (days > 120 or years >= 1):
-            self.password_strength_bar.set(0.5)
-            self.password_strength_bar.configure(progress_color="yellow")
+            elif password.complexity == "Average" and (days > 120 or years >= 1):
+                self.password_strength_bar.set(0.5)
+                self.password_strength_bar.configure(progress_color="yellow")
 
-        elif password.complexity == "Weak" and (days < 120 and years < 1):
-            self.password_strength_bar.set(0.2)
-            self.password_strength_bar.configure(progress_color="red")
+            elif password.complexity == "Weak" and (days < 120 and years < 1):
+                self.password_strength_bar.set(0.2)
+                self.password_strength_bar.configure(progress_color="red")
 
-        else:
-            self.password_strength_bar.set(0.2)
-            self.password_strength_bar.configure(progress_color="red")
+            else:
+                self.password_strength_bar.set(0.2)
+                self.password_strength_bar.configure(progress_color="red")
+        except ValueError as e:
+            raise e
 
-    def on_submit(self) -> None:
-        password = Password(self.password_checker_field.get())
-        self.show_label(password)
-        self.update_progressbar(password)
-
-    def password_panel_event(self, plain_password: str) -> None:
+    def _password_panel_event(self, plain_password: str) -> None:
         try:
             if self.password_panel is None or not self.password_panel .winfo_exists():
                 self.password_panel  = PasswordPanel(password=plain_password, master=self)
-                self.password_panel.focus()
+                self.wait_visibility()
                 self.wait_window(self.password_panel)
             else:
                 self.password_panel.focus()
         except Exception as e:
             raise e
     
-    def create_password_event(self) -> None:
+    def _create_password_event(self) -> None:
         try:
             if self.create_panel is None or not self.create_panel.winfo_exists():
                 self.create_panel = CreatePasswordPanel(master=self)
@@ -183,16 +178,19 @@ class App(CTk):
         except Exception as e:
             raise e
 
-    def auth_access_event(self) -> None:
+    def _auth_access_event(self) -> None:
         try:
             dialog = CTkToplevel(self)
             dialog.title("Authorization")
-            
+            dialog.wait_visibility()
             dialog.geometry("400x200")
             dialog.resizable(False, False)
-            dialog.wait_visibility()
             dialog.grab_set()
             dialog.transient(self)
+            self.lift()
+
+            self.password = None
+            auth_service = AuthService()
 
             entry = CTkEntry(
                 dialog,
@@ -224,17 +222,6 @@ class App(CTk):
             def on_cancel():
                 dialog.destroy()
 
-            ok_button = CTkButton(
-                dialog, 
-                width=100, 
-                height=30,
-                fg_color="#606363",
-                hover_color="#111111",            
-                font=("Helvetica", 16, "bold"),
-                text="OK", 
-                command=on_ok)
-            ok_button.grid(row=2, column=0, padx=50, pady=10, sticky="w")
-
             cancel_button = CTkButton(
                 dialog, 
                 width=100, 
@@ -244,13 +231,24 @@ class App(CTk):
                 text="Cancel",
                 font=("Helvetica", 16, "bold"),
                 command=on_cancel)
-            cancel_button.grid(row=2, column=0, padx=(0,50), pady=10, sticky="e")
+            cancel_button.grid(row=2, column=0, padx=50, pady=10, sticky="w")
+
+            ok_button = CTkButton(
+                dialog, 
+                width=100, 
+                height=30,
+                fg_color="#606363",
+                hover_color="#111111",            
+                font=("Helvetica", 16, "bold"),
+                text="OK", 
+                command=on_ok)
+            ok_button.grid(row=2, column=0, padx=(0,50), pady=10, sticky="e")
 
             self.wait_window(dialog)
 
             user_input = result["password"]
-            if user_input and self.auth_service.verify_password(user_input):
-                self.password_panel_event(user_input)
+            if user_input and auth_service.verify_password(user_input):
+                self._password_panel_event(user_input)
         except Exception as e:
             raise e
         
